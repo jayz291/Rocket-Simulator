@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 class RocketSimulator {
     constructor() {
@@ -13,6 +14,11 @@ class RocketSimulator {
         this.scene.background = new THREE.Color(0x0000ff);
         this.scene.add(this.camera);
 
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.5;
+        this.controls.maxPolarAngle = Math.PI / 2;
+
         this.camera.position.set(20, 10, 20);
         this.camera.lookAt(0, 12, 0);
 
@@ -21,12 +27,15 @@ class RocketSimulator {
         this.scene.add(directionalLight);
 
         this.ground = new Ground(0x00ff00);
+        this.rocket = new Rocket(3);
         this.scene.add(this.ground.mesh);
+        this.scene.add(this.rocket.mesh);
         this.animate = this.animate.bind(this);
         this.animate();
     }
     animate() {
         requestAnimationFrame(this.animate);
+        this.controls.update();
         this.renderer.render(this.scene, this.camera);
     }
 }
@@ -38,6 +47,44 @@ class Ground {
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.mesh.rotation.x = -Math.PI / 2;
         this.mesh.position.set(0, 0, 0);
+    }
+}
+
+class Rocket {
+    constructor(elevation) {
+        this.mesh = new THREE.Group();
+        this.mesh.position.set(0, 5 + elevation, 0);
+        this.buildRocket(elevation);
+    }
+    buildRocket(elevation) {
+        const cylinder = new THREE.CylinderGeometry(2, 2, 10, 32);
+        const material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+        const cylinderMesh = new THREE.Mesh(cylinder, material);
+        //cylinderMesh.position.y = elevation - 3;
+        const cone = new THREE.ConeGeometry(2, 4, 32);
+        const coneMesh = new THREE.Mesh(cone, material);
+        coneMesh.position.y = 4 + elevation;
+
+        const finShape = new THREE.Shape();
+        finShape.moveTo(2, -5);
+        finShape.lineTo(5, -8);
+        finShape.lineTo(2, -2);
+        finShape.lineTo(2, -5);
+        const extrudeSettings = { depth: 0.2, bevelEnabled: false };
+        const fin = new THREE.ExtrudeGeometry(finShape, extrudeSettings);
+        const finMesh = new THREE.Mesh(fin, material);
+
+        const finMesh2 = finMesh.clone();
+        finMesh2.rotation.y += Math.PI * 2 / 3;
+        
+        const finMesh3 = finMesh.clone();
+        finMesh3.rotation.y -= Math.PI * 2 / 3;
+
+        this.mesh.add(coneMesh);
+        this.mesh.add(cylinderMesh);
+        this.mesh.add(finMesh);
+        this.mesh.add(finMesh2);
+        this.mesh.add(finMesh3);
     }
 }
 
