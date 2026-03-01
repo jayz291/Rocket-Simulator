@@ -1,0 +1,16 @@
+#container {
+    display: flex;
+    height: 100vh;
+}
+
+#simulation {
+    flex: 1;
+}
+
+#options {
+    width: 250px;
+    background-color: lightcoral; 
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+}

@@ -5,9 +5,66 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="Container">
-    <script type="module" src="scripts.js"></script>
+    <div id="container">
+    <div id="simulation"></div>
+    <div id="options">
+        <h1>Configure Simulation</h1>
+        <h2>Planet Data</h2>
+        <div>
+            <label for="planetMass">Planet Mass (kg):</label>
+            <br>
+            <input type="number" id="planetMass" value="5.972e24" step="any">
+        </div>
+        <div>
+            <label for="planetRadius">Planet Radius (km):</label>
+            <br>
+            <input type="number" id="planetRadius" value="6378" step="any">
+        </div>
+        <div>
+            <label for="atmosphereThickness">Atmosphere Thickness (km):</label>
+            <br>
+            <input type="number" id="atmosphereThickness" value="100" step="any">
+        </div>
+        <div>
+            <label for="airDensity">Air Density (kg/m^3):</label>
+            <br>
+            <input type="number" id="airDensity" value="1.225" step="any">
+        </div>
+        <div>
+            <label for="scaleHeight">Scale Height (km) [where the air density is 1/e times as dense compared to the surface]:</label>
+            <br>
+            <input type="number" id="scaleHeight" value="8.5" step="any">
+        </div>
+        <h2>Rocket Data</h2>
+        <div>
+            <label for="rocketRadius">Rocket Radius (m):</label>
+            <br>
+            <input type="number" id="rocketRadius" value="2" step="any">
+        </div>
+        <div>
+            <label for="rocketMass">Rocket Mass (kg) [excluding fuel]:</label>
+            <br>
+            <input type="number" id="rocketMass" value="10" step="any">
+        </div>
+        <div>
+            <label for="fuelMass">Fuel Mass (kg):</label>
+            <br>
+            <input type="number" id="fuelMass" value="5" step="any">
+        </div>
+        <div>
+            <label for="fuelConsumptionRate">Fuel Consumption Rate (kg/sec):</label>
+            <br>
+            <input type="number" id="fuelConsumptionRate" value="1" step="any">
+        </div>
+        <div>
+            <label for="thrustForce">Thrust Force (N):</label>
+            <br>
+            <input type="number" id="thrustForce" value="500" step="any">
+        </div>
+
     </div>
+    </div>
+    <script type="module" src="scripts.js"></script>
 </body>
 </html>
 

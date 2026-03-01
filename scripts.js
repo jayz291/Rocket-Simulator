@@ -1,16 +1,19 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+const simulationBox = document.getElementById('simulation');
+
 class RocketSimulator {
     constructor() {
         this.scene = new THREE.Scene();
         this.renderer = new THREE.WebGLRenderer();
-        this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+        this.camera = new THREE.PerspectiveCamera(45, 
+            simulationBox.clientWidth / simulationBox.clientHeight, 1, 1000);
         this.init();
     }
     init() {
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(this.renderer.domElement);
+        this.renderer.setSize(simulationBox.clientWidth, simulationBox.clientHeight);
+        simulationBox.appendChild(this.renderer.domElement);
         this.scene.background = new THREE.Color(0x0000ff);
         this.scene.add(this.camera);
 
@@ -27,7 +30,7 @@ class RocketSimulator {
         this.scene.add(directionalLight);
 
         this.ground = new Ground(0x00ff00);
-        this.rocket = new Rocket(3);
+        this.rocket = new Rocket(3, 2);
         this.scene.add(this.ground.mesh);
         this.scene.add(this.rocket.mesh);
         this.animate = this.animate.bind(this);
@@ -51,25 +54,25 @@ class Ground {
 }
 
 class Rocket {
-    constructor(elevation) {
+    constructor(elevation, radius) {
         this.mesh = new THREE.Group();
         this.mesh.position.set(0, 5 + elevation, 0);
-        this.buildRocket(elevation);
+        this.buildRocket(elevation, radius);
     }
-    buildRocket(elevation) {
-        const cylinder = new THREE.CylinderGeometry(2, 2, 10, 32);
+    buildRocket(elevation, radius) {
+        const cylinder = new THREE.CylinderGeometry(radius, radius, 10, 32);
         const material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
         const cylinderMesh = new THREE.Mesh(cylinder, material);
-        //cylinderMesh.position.y = elevation - 3;
-        const cone = new THREE.ConeGeometry(2, 4, 32);
+      
+        const cone = new THREE.ConeGeometry(radius, 4, 32);
         const coneMesh = new THREE.Mesh(cone, material);
         coneMesh.position.y = 4 + elevation;
 
         const finShape = new THREE.Shape();
-        finShape.moveTo(2, -5);
-        finShape.lineTo(5, -8);
-        finShape.lineTo(2, -2);
-        finShape.lineTo(2, -5);
+        finShape.moveTo(radius, -5);
+        finShape.lineTo(radius + 3, -8);
+        finShape.lineTo(radius, -2);
+        finShape.lineTo(radius, -5);
         const extrudeSettings = { depth: 0.2, bevelEnabled: false };
         const fin = new THREE.ExtrudeGeometry(finShape, extrudeSettings);
         const finMesh = new THREE.Mesh(fin, material);
@@ -86,6 +89,20 @@ class Rocket {
         this.mesh.add(finMesh2);
         this.mesh.add(finMesh3);
     }
+}
+
+class Stats {
+    deltat;
+    planetMass;
+    planetRadius;
+    atmosphereThickness;
+    airDensity;
+    scaleHeight;
+    crossSectionalArea;
+    rocketMass;
+    fuelMass;
+    fuelConsumptionRate;
+    thrustForce;
 }
 
 const rocketSimulator = new RocketSimulator();
