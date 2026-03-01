@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const simulationBox = document.getElementById('simulation');
+const G = 6.6743e-11;
 
 class RocketSimulator {
     constructor() {
         this.scene = new THREE.Scene();
-        this.renderer = new THREE.WebGLRenderer();
+        this.renderer = new THREE.WebGLRenderer({antialias: true, logarithmicDepthBuffer: true});
         this.camera = new THREE.PerspectiveCamera(45, 
             simulationBox.clientWidth / simulationBox.clientHeight, 1, 1000);
         this.init();
@@ -103,6 +104,7 @@ class Simulation {
         this.fuelMass = 5;
         this.fuelConsumptionRate = 1;
         this.thrustForce = 500;
+        this.currentHeight = 0;
     }
     updateStats(data) {
         this.planetMass = data.planetMass;
@@ -115,7 +117,45 @@ class Simulation {
         this.fuelMass = data.fuelMass;
         this.fuelConsumptionRate = data.fuelConsumptionRate;
         this.thrustForce = data.thrustForce;
+
+        this.escapeVelocity = (2 * G * this.planetMass / this.planetRadius) ** (1 / 2);
+        this.totalMass = this.rocketMass + this.fuelMass;
+        this.crossSectionalArea = this.rocketRadius * Math.PI ** 2;
+        this.velocity = 0;
+        this.time = 0;
+        //this.gravity = G * this.planetMass / (this.planetRadius ** 2);
+        this.finished = false;
+
         console.log(this);
+    }
+    updatePhysics(deltaTime) {
+        if (!this.finished) {
+            let currentAirDensity, gravity, force, acceleration;
+            if (this.currentHeight < this.atmosphereThickness) {
+                currentAirDensity = this.airDensity * Math.E ** (-this.currentHeight / this.scaleHeight);
+            } else {
+                currentAirDensity = 0;
+            }
+            gravity = G * this.planetMass / ((this.planetRadius + this.currentHeight) ** 2);
+            if (this.fuelMass > 0) {
+                force = this.thrustForce - gravity * this.totalMass - 
+                currentAirDensity * this.crossSectionalArea * (this.velocity ** 2) * Math.abs(this.velocity);
+            } else {
+                this.totalMass = this.rocketMass;
+                force = -gravity * this.totalMass -
+                currentAirDensity * this.crossSectionalArea * (this.velocity ** 2) * Math.abs(this.velocity);
+            }
+            acceleration = force / this.totalMass;
+            this.velocity += deltaTime * acceleration;
+            this.currentHeight = Math.max(this.currentHeight + this.velocity * deltaTime, 0);
+            this.fuelMass = Math.max(this.fuelMass - this.fuelConsumptionRate * deltaTime, 0);
+            this.totalMass = Math.max(this.rocketMass + this.fuelMass, this.rocketMass);
+            this.time += deltaTime;
+
+            if (this.velocity > this.escapeVelocity) {
+                this.finished = true;
+            }
+        }
     }
 }
 
