@@ -91,18 +91,53 @@ class Rocket {
     }
 }
 
-class Stats {
-    deltat;
-    planetMass;
-    planetRadius;
-    atmosphereThickness;
-    airDensity;
-    scaleHeight;
-    crossSectionalArea;
-    rocketMass;
-    fuelMass;
-    fuelConsumptionRate;
-    thrustForce;
+class Simulation {
+    constructor() {
+        this.planetMass = 5.972e24;
+        this.planetRadius = 6378;
+        this.atmosphereThickness = 100;
+        this.airDensity = 1.225;
+        this.scaleHeight = 8.5;
+        this.rocketRadius = 2;
+        this.rocketMass = 10;
+        this.fuelMass = 5;
+        this.fuelConsumptionRate = 1;
+        this.thrustForce = 500;
+    }
+    updateStats(data) {
+        this.planetMass = data.planetMass;
+        this.planetRadius = data.planetRadius;
+        this.atmosphereThickness = data.atmosphereThickness;
+        this.airDensity = data.airDensity;
+        this.scaleHeight = data.scaleHeight;
+        this.rocketRadius = data.rocketRadius;
+        this.rocketMass = data.rocketMass;
+        this.fuelMass = data.fuelMass;
+        this.fuelConsumptionRate = data.fuelConsumptionRate;
+        this.thrustForce = data.thrustForce;
+        console.log(this);
+    }
 }
 
 const rocketSimulator = new RocketSimulator();
+
+const currentSimulation = new Simulation();
+
+const updateButton = document.getElementById("configure-btn");
+
+updateButton.addEventListener('click', () => {
+    const inputData = {
+        rocketMass: parseFloat(document.getElementById('rocketMass').value),
+        planetMass: parseFloat(document.getElementById('planetMass').value),
+        planetRadius: parseFloat(document.getElementById('planetRadius').value),
+        atmosphereThickness: parseFloat(document.getElementById('atmosphereThickness').value),
+        airDensity: parseFloat(document.getElementById('airDensity').value),
+        scaleHeight: parseFloat(document.getElementById('scaleHeight').value),
+        rocketRadius: parseFloat(document.getElementById('rocketRadius').value),
+        rocketMass: parseFloat(document.getElementById('rocketMass').value),
+        fuelMass: parseFloat(document.getElementById('fuelMass').value),
+        fuelConsumptionRate: parseFloat(document.getElementById('fuelConsumptionRate').value),
+        thrustForce: parseFloat(document.getElementById('thrustForce').value)
+    }
+    currentSimulation.updateStats(inputData);
+});
