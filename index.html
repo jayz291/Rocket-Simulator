@@ -7,6 +7,11 @@
 <body>
     <div id="container">
     <div id="simulation">
+        <div id="stats">
+        Altitude: <span id="altitude">0</span> m<br>
+        Velocity: <span id="velocity">0</span> m/s<br>
+        Time: <span id="time">0</span> s
+        </div>
     </div>
     <div id="options">
         <h1>Configure Simulation</h1>
@@ -40,7 +45,7 @@
         <div>
             <label for="rocketRadius">Rocket Radius (m):</label>
             <br>
-            <input type="number" id="rocketRadius" value="2" step="any">
+            <input type="number" id="rocketRadius" value="0.1764" step="any">
         </div>
         <div>
             <label for="rocketMass">Rocket Mass (kg) [excluding fuel]:</label>
@@ -50,12 +55,12 @@
         <div>
             <label for="fuelMass">Fuel Mass (kg):</label>
             <br>
-            <input type="number" id="fuelMass" value="5" step="any">
+            <input type="number" id="fuelMass" value="8" step="any">
         </div>
         <div>
             <label for="fuelConsumptionRate">Fuel Consumption Rate (kg/sec):</label>
             <br>
-            <input type="number" id="fuelConsumptionRate" value="1" step="any">
+            <input type="number" id="fuelConsumptionRate" value="0.8" step="any">
         </div>
         <div>
             <label for="thrustForce">Thrust Force (N):</label>
@@ -68,6 +73,9 @@
         <br>
         <br>
         <button id="startButton">Start Simulation</button>
+        <br>
+        <br>
+        <button id="resetButton">Reset Simulation</button>
 
     </div>
     </div>

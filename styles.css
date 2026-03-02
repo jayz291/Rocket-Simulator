@@ -7,6 +7,11 @@
     flex: 1;
 }
 
+#stats {
+    position: absolute;
+    color: white;
+}
+
 #options {
     width: 250px;
     background-color: lightcoral; 
