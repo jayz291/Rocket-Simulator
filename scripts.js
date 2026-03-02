@@ -5,12 +5,13 @@ const simulationBox = document.getElementById('simulation');
 const G = 6.6743e-11;
 
 class RocketSimulator {
-    constructor() {
+    constructor(simulation) {
         this.scene = new THREE.Scene();
         this.renderer = new THREE.WebGLRenderer({antialias: true, logarithmicDepthBuffer: true});
         this.camera = new THREE.PerspectiveCamera(45, 
-            simulationBox.clientWidth / simulationBox.clientHeight, 1, 1000);
+            simulationBox.clientWidth / simulationBox.clientHeight, 1, 10000000);
         this.init();
+        this.simulation = simulation;
     }
     init() {
         this.renderer.setSize(simulationBox.clientWidth, simulationBox.clientHeight);
@@ -34,11 +35,20 @@ class RocketSimulator {
         this.rocket = new Rocket(3, 2);
         this.scene.add(this.ground.mesh);
         this.scene.add(this.rocket.mesh);
+        this.simulating = false;
         this.animate = this.animate.bind(this);
         this.animate();
     }
     animate() {
         requestAnimationFrame(this.animate);
+        if (this.simulating && this.simulation && !this.simulation.finished) {
+            this.simulation.updatePhysics(0.016);
+            this.rocket.mesh.position.y = 8 + this.simulation.currentHeight;
+            this.camera.position.y = 8 + this.simulation.currentHeight;
+            this.controls.target.y = this.rocket.mesh.position.y;
+        } else {
+            this.simulating = false;
+        }
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
     }
@@ -95,16 +105,23 @@ class Rocket {
 class Simulation {
     constructor() {
         this.planetMass = 5.972e24;
-        this.planetRadius = 6378;
+        this.planetRadius = 6378 * 1000;
         this.atmosphereThickness = 100;
         this.airDensity = 1.225;
-        this.scaleHeight = 8.5;
+        this.scaleHeight = 8.5 * 1000;
         this.rocketRadius = 2;
         this.rocketMass = 10;
         this.fuelMass = 5;
         this.fuelConsumptionRate = 1;
         this.thrustForce = 500;
         this.currentHeight = 0;
+        this.velocity = 0;
+
+        this.escapeVelocity = (2 * G * this.planetMass / this.planetRadius) ** (1 / 2);
+        this.totalMass = this.rocketMass + this.fuelMass;
+        this.crossSectionalArea = Math.PI * this.rocketRadius ** 2;
+        this.time = 0;
+        this.finished = false;
     }
     updateStats(data) {
         this.planetMass = data.planetMass;
@@ -120,10 +137,9 @@ class Simulation {
 
         this.escapeVelocity = (2 * G * this.planetMass / this.planetRadius) ** (1 / 2);
         this.totalMass = this.rocketMass + this.fuelMass;
-        this.crossSectionalArea = this.rocketRadius * Math.PI ** 2;
+        this.crossSectionalArea = Math.PI * this.rocketRadius ** 2;
         this.velocity = 0;
         this.time = 0;
-        //this.gravity = G * this.planetMass / (this.planetRadius ** 2);
         this.finished = false;
 
         console.log(this);
@@ -137,42 +153,53 @@ class Simulation {
                 currentAirDensity = 0;
             }
             gravity = G * this.planetMass / ((this.planetRadius + this.currentHeight) ** 2);
+            //console.log(gravity);
+            //console.log(G * this.planetMass);
+            //console.log((this.planetRadius + this.currentHeight) ** 2);
             if (this.fuelMass > 0) {
                 force = this.thrustForce - gravity * this.totalMass - 
-                currentAirDensity * this.crossSectionalArea * (this.velocity ** 2) * Math.abs(this.velocity);
+                currentAirDensity * this.crossSectionalArea * (this.velocity ** 2) * Math.sign(this.velocity);
             } else {
                 this.totalMass = this.rocketMass;
                 force = -gravity * this.totalMass -
-                currentAirDensity * this.crossSectionalArea * (this.velocity ** 2) * Math.abs(this.velocity);
+                currentAirDensity * this.crossSectionalArea * (this.velocity ** 2) * Math.sign(this.velocity);
             }
+            //console.log(this.totalMass);
+            //console.log(this.currentHeight);
             acceleration = force / this.totalMass;
             this.velocity += deltaTime * acceleration;
             this.currentHeight = Math.max(this.currentHeight + this.velocity * deltaTime, 0);
             this.fuelMass = Math.max(this.fuelMass - this.fuelConsumptionRate * deltaTime, 0);
             this.totalMass = Math.max(this.rocketMass + this.fuelMass, this.rocketMass);
             this.time += deltaTime;
+            console.log(currentAirDensity);
 
             if (this.velocity > this.escapeVelocity) {
+                this.finished = true;
+            }
+            if (this.time > 2 && this.currentHeight == 0) {
                 this.finished = true;
             }
         }
     }
 }
 
-const rocketSimulator = new RocketSimulator();
+
 
 const currentSimulation = new Simulation();
+const rocketSimulator = new RocketSimulator(currentSimulation);
 
 const updateButton = document.getElementById("configure-btn");
+const startButton = document.getElementById("startButton");
 
 updateButton.addEventListener('click', () => {
     const inputData = {
         rocketMass: parseFloat(document.getElementById('rocketMass').value),
         planetMass: parseFloat(document.getElementById('planetMass').value),
-        planetRadius: parseFloat(document.getElementById('planetRadius').value),
-        atmosphereThickness: parseFloat(document.getElementById('atmosphereThickness').value),
+        planetRadius: parseFloat(document.getElementById('planetRadius').value) * 1000,
+        atmosphereThickness: parseFloat(document.getElementById('atmosphereThickness').value) * 1000,
         airDensity: parseFloat(document.getElementById('airDensity').value),
-        scaleHeight: parseFloat(document.getElementById('scaleHeight').value),
+        scaleHeight: parseFloat(document.getElementById('scaleHeight').value) * 1000,
         rocketRadius: parseFloat(document.getElementById('rocketRadius').value),
         rocketMass: parseFloat(document.getElementById('rocketMass').value),
         fuelMass: parseFloat(document.getElementById('fuelMass').value),
@@ -180,4 +207,9 @@ updateButton.addEventListener('click', () => {
         thrustForce: parseFloat(document.getElementById('thrustForce').value)
     }
     currentSimulation.updateStats(inputData);
+});
+
+startButton.addEventListener('click', () => {
+    currentSimulation.finished = false;
+    rocketSimulator.simulating = true;
 });
