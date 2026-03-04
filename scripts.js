@@ -7,6 +7,10 @@ const velocityStat = document.getElementById('velocity');
 const timeStat = document.getElementById('time');
 const G = 6.6743e-11;
 
+const startButton = document.getElementById("startButton");
+const resetButton = document.getElementById("resetButton");
+const rocketSizeInput = document.getElementById("rocketRadius");
+
 class RocketSimulator {
     constructor(simulation) {
         this.scene = new THREE.Scene();
@@ -21,7 +25,10 @@ class RocketSimulator {
     init() {
         this.renderer.setSize(simulationBox.clientWidth, simulationBox.clientHeight);
         simulationBox.appendChild(this.renderer.domElement);
-        this.scene.background = new THREE.Color(0x0000ff);
+        this.startColour = new THREE.Color(0x90d5ff);
+        this.endColour = new THREE.Color(0x000000);
+        this.scene.background = this.startColour;
+        this.scene.fog = new THREE.Fog(this.startColour, 10000, 1400000);
         this.scene.add(this.camera);
 
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -29,6 +36,7 @@ class RocketSimulator {
         this.controls.dampingFactor = 0.5;
         this.controls.maxPolarAngle = Math.PI / 2;
 
+        this.camera.far = 1200000;
         this.camera.position.set(20, 10, 20);
         this.camera.lookAt(0, 12, 0);
 
@@ -38,7 +46,7 @@ class RocketSimulator {
 
         this.ground = new Ground(0x00ff00);
         this.launchPad = new LaunchPad();
-        this.rocket = new Rocket(3, 2);
+        this.rocket = new Rocket(this.simulation.rocketRadius * 3, this.simulation.rocketRadius);
         this.scene.add(this.ground.mesh);
         this.scene.add(this.rocket.mesh);
         this.scene.add(this.launchPad.mesh);
@@ -53,34 +61,49 @@ class RocketSimulator {
             let previousHeight = this.simulation.currentHeight;
             this.simulation.updatePhysics(0.016);
             let deltaY = this.simulation.currentHeight - previousHeight;
-            this.rocket.mesh.position.y = 8 + this.simulation.currentHeight;
+            this.rocket.mesh.position.y = this.simulation.rocketRadius * 6 + 0.1 + this.simulation.currentHeight;
             this.camera.position.y += deltaY;
             this.controls.target.y = this.rocket.mesh.position.y;
             this.controls.maxPolarAngle = Math.PI;
         } else {
             this.simulating = false;
         }
+        if (this.simulating || this.simulation.currentHeight != 0) {
+            startButton.disabled = true;
+        }
         if (this.resetting) {
             this.simulation.currentHeight = 0;
             this.simulation.velocity = 0;
             this.simulation.time = 0;
             this.simulation.fuelMass = this.simulation.originalFuelMass;
-            this.rocket.mesh.position.y = 8 + this.simulation.currentHeight;
-            this.camera.position.y = 8 + this.simulation.currentHeight;
+            this.rocket.mesh.position.y = this.simulation.rocketRadius * 6 + 0.1 + this.simulation.currentHeight;
+            this.camera.position.y = this.simulation.rocketRadius * 6 + 0.1 + this.simulation.currentHeight;
             this.controls.target.y = this.rocket.mesh.position.y;
             this.resetting = false;
+            startButton.disabled = false;
         }
         altitudeStat.textContent = this.simulation.currentHeight.toFixed(5);
         velocityStat.textContent = this.simulation.velocity.toFixed(5);
         timeStat.textContent = this.simulation.time.toFixed(2);
+        let alpha = this.simulation.currentHeight / this.simulation.atmosphereThickness;
+        let currentColour = new THREE.Color().lerpColors(this.startColour, this.endColour, alpha);
+        this.scene.background = currentColour;
+        this.scene.fog.color = currentColour;
+        
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
+    }
+    updateRocket(newRadius) {
+        this.scene.remove(this.rocket.mesh);
+        this.simulation.rocketRadius = newRadius;
+        this.rocket = new Rocket(newRadius * 3, newRadius);
+        this.scene.add(this.rocket.mesh);
     }
 }
 
 class Ground {
     constructor(color) {
-        this.geometry = new THREE.PlaneGeometry(140000, 140000);
+        this.geometry = new THREE.PlaneGeometry(2800000, 2800000);
         this.material = new THREE.MeshLambertMaterial({ color: color});
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.mesh.rotation.x = -Math.PI / 2;
@@ -101,24 +124,24 @@ class LaunchPad {
 class Rocket {
     constructor(elevation, radius) {
         this.mesh = new THREE.Group();
-        this.mesh.position.set(0, 5 + elevation, 0);
+        this.mesh.position.set(0, elevation + radius * 3, 0);
         this.buildRocket(elevation, radius);
     }
     buildRocket(elevation, radius) {
-        const cylinder = new THREE.CylinderGeometry(radius, radius, 10, 32);
+        const cylinder = new THREE.CylinderGeometry(radius, radius, radius * 6, 32);
         const material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
         const cylinderMesh = new THREE.Mesh(cylinder, material);
       
-        const cone = new THREE.ConeGeometry(radius, 4, 32);
+        const cone = new THREE.ConeGeometry(radius, radius * 2, 32);
         const coneMesh = new THREE.Mesh(cone, material);
-        coneMesh.position.y = 4 + elevation;
+        coneMesh.position.y = radius + elevation;
 
         const finShape = new THREE.Shape();
-        finShape.moveTo(radius, -5);
-        finShape.lineTo(radius + 3, -8);
-        finShape.lineTo(radius, -2);
-        finShape.lineTo(radius, -5);
-        const extrudeSettings = { depth: 0.2, bevelEnabled: false };
+        finShape.moveTo(radius, -radius * 2);
+        finShape.lineTo(radius + elevation, -radius * 6);
+        finShape.lineTo(radius, 0);
+        finShape.lineTo(radius, -radius * 2);
+        const extrudeSettings = { depth: radius / 10, bevelEnabled: false };
         const fin = new THREE.ExtrudeGeometry(finShape, extrudeSettings);
         const finMesh = new THREE.Mesh(fin, material);
 
@@ -208,9 +231,8 @@ class Simulation {
             this.fuelMass = Math.max(this.fuelMass - this.fuelConsumptionRate * deltaTime, 0);
             this.totalMass = Math.max(this.rocketMass + this.fuelMass, this.rocketMass);
             this.time += deltaTime;
-            console.log(currentAirDensity);
 
-            if (this.velocity > this.escapeVelocity && this.currentHeight > 10000000) {
+            if (this.velocity > this.escapeVelocity && this.currentHeight > 20000000) {
                 this.finished = true;
             }
             if (this.time > 2 && this.currentHeight == 0) {
@@ -225,11 +247,7 @@ class Simulation {
 const currentSimulation = new Simulation();
 const rocketSimulator = new RocketSimulator(currentSimulation);
 
-const updateButton = document.getElementById("configure-btn");
-const startButton = document.getElementById("startButton");
-const resetButton = document.getElementById("resetButton");
-
-updateButton.addEventListener('click', () => {
+startButton.addEventListener('click', () => {
     const inputData = {
         rocketMass: parseFloat(document.getElementById('rocketMass').value),
         planetMass: parseFloat(document.getElementById('planetMass').value),
@@ -245,9 +263,6 @@ updateButton.addEventListener('click', () => {
     }
     currentSimulation.updateStats(inputData);
     rocketSimulator.resetting = true;
-});
-
-startButton.addEventListener('click', () => {
     currentSimulation.finished = false;
     rocketSimulator.simulating = true;
 });
@@ -262,3 +277,12 @@ resetButton.addEventListener('click', () => {
     this.renderer.render(this.scene, this.camera);
 
 });
+
+if (rocketSizeInput) {
+    rocketSizeInput.addEventListener('input', (event) => {
+        const newRadius = parseFloat(event.target.value);
+        if (!isNaN(newRadius) && newRadius > 0) {
+            rocketSimulator.updateRocket(newRadius);
+        }
+    });
+}
