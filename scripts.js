@@ -89,6 +89,9 @@ class RocketSimulator {
         let currentColour = new THREE.Color().lerpColors(this.startColour, this.endColour, alpha);
         this.scene.background = currentColour;
         this.scene.fog.color = currentColour;
+
+        const hasThrust = this.simulating && this.simulation.fuelMass > 0;
+        this.rocket.updateParticles(hasThrust, this.simulation.rocketRadius);
         
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
@@ -130,6 +133,8 @@ class Rocket {
     buildRocket(elevation, radius) {
         const cylinder = new THREE.CylinderGeometry(radius, radius, radius * 6, 32);
         const material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+        material.depthWrite = true;
+        material.transparent = false;
         const cylinderMesh = new THREE.Mesh(cylinder, material);
       
         const cone = new THREE.ConeGeometry(radius, radius * 2, 32);
@@ -151,11 +156,59 @@ class Rocket {
         const finMesh3 = finMesh.clone();
         finMesh3.rotation.y -= Math.PI * 2 / 3;
 
+
+        this.particleCount = 1000;
+        const positions = new Float32Array(this.particleCount * 3);
+        this.particleVelocities = [];
+
+        for (let i = 0; i < this.particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * radius;
+            positions[i * 3 + 1] = -radius * 3 + (Math.random() * radius * 2);
+            positions[i * 3 + 2] = (Math.random() - 0.5) * radius;
+            this.particleVelocities.push({
+                x: (Math.random() - 0.5) * 0.1,
+                y: -Math.random() * 0.5 - 0.2, 
+                z: (Math.random() - 0.5) * 0.1
+            });
+        }
+
+        this.particleGeometry = new THREE.BufferGeometry();
+        this.particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const thrustMaterial = new THREE.PointsMaterial({
+            size: radius / 5,
+            color: 0xffa500, 
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true,
+            opacity: 0.8
+        });
+        this.exhaust = new THREE.Points(this.particleGeometry, thrustMaterial);
+
         this.mesh.add(coneMesh);
         this.mesh.add(cylinderMesh);
         this.mesh.add(finMesh);
         this.mesh.add(finMesh2);
         this.mesh.add(finMesh3);
+        this.mesh.add(this.exhaust);
+    }
+    updateParticles(isThrusting, radius) {
+        this.exhaust.visible = isThrusting;
+        if (!isThrusting) {
+            return;
+        }
+        const positions = this.particleGeometry.attributes.position.array;
+        for (let i = 0; i < this.particleCount; i++) {
+            positions[i * 3] += this.particleVelocities[i].x;
+            positions[i * 3 + 1] += this.particleVelocities[i].y;
+            positions[i * 3 + 2] += this.particleVelocities[i].z;
+            if (positions[i * 3 + 1] < -radius * 12) {
+                positions[i * 3] = (Math.random() - 0.5) * radius;
+                positions[i * 3 + 1] = -radius * 3;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * radius;
+            }
+        }
+        this.particleGeometry.attributes.position.needsUpdate = true;
     }
 }
 
@@ -232,7 +285,7 @@ class Simulation {
             this.totalMass = Math.max(this.rocketMass + this.fuelMass, this.rocketMass);
             this.time += deltaTime;
 
-            if (this.velocity > this.escapeVelocity && this.currentHeight > 20000000) {
+            if (this.velocity > this.escapeVelocity && this.currentHeight > 100000000) {
                 this.finished = true;
             }
             if (this.time > 2 && this.currentHeight == 0) {
