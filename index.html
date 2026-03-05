@@ -42,36 +42,46 @@
             <input type="number" id="scaleHeight" value="8.5" step="any">
         </div>
         <h2>Rocket Data</h2>
-        <div>
-            <label for="rocketRadius">Rocket Radius (m):</label>
-            <br>
-            <input type="number" id="rocketRadius" value="0.1764" step="any">
+        <div style="margin-bottom: 20px; font-weight: bold;">
+            <label><input type="radio" name="stageMode" id="modeSingle" checked> Single Stage</label>
+            <label style="margin-left: 15px;"><input type="radio" name="stageMode" id="modeMulti"> Multi Stage</label>
         </div>
-        <div>
-            <label for="rocketMass">Rocket Mass (kg) [excluding fuel]:</label>
-            <br>
-            <input type="number" id="rocketMass" value="10" step="any">
+        <div id="singleStageInputs">
+            <label>Rocket Radius (m): <input type="number" id="rocketRadius" value="0.1764" step="any"></label><br>
+            <label>Dry Mass (kg) [excluding fuel]: <input type="number" id="rocketMass" value="10" step="any"></label><br>
+            <label>Fuel Mass (kg): <input type="number" id="fuelMass" value="8" step="any"></label><br>
+            <label>Burn Rate (kg/sec): <input type="number" id="fuelConsumptionRate" value="0.8" step="any"></label><br>
+            <label>Thrust Force (N): <input type="number" id="thrustForce" value="500" step="any"></label><br>
         </div>
-        <div>
-            <label for="fuelMass">Fuel Mass (kg):</label>
-            <br>
-            <input type="number" id="fuelMass" value="8" step="any">
+        <div id="multiStageInputs" style="display: none">
+            <h3>Stage 1 (Bottom)</h3>
+            <div>
+                <label>Stage Radius (m): <input type="number" id="s1_radius" value="15" step="any"></label><br>
+                <label>Dry Mass (kg) [excluding fuel]: <input type="number" id="s1_mass" value="15" step="any"></label><br>
+                <label>Fuel Mass (kg): <input type="number" id="s1_fuel" value="40" step="any"></label><br>
+                <label>Burn Rate (kg/s): <input type="number" id="s1_burn" value="2.0" step="any"></label><br>
+                <label>Thrust Force (N): <input type="number" id="s1_thrust" value="1500" step="any"></label>
+            </div>
+            <h3>Stage 2</h3>
+            <div>
+                <label>Stage Radius (m): <input type="number" id="s2_radius" value="15" step="any"></label><br>
+                <label>Dry Mass (kg) [excluding fuel]: <input type="number" id="s2_mass" value="15" step="any"></label><br>
+                <label>Fuel Mass (kg): <input type="number" id="s2_fuel" value="40" step="any"></label><br>
+                <label>Burn Rate (kg/s): <input type="number" id="s2_burn" value="2.0" step="any"></label><br>
+                <label>Thrust Force (N): <input type="number" id="s2_thrust" value="1500" step="any"></label>
+            </div>
+            <h3>Stage 3 (top)</h3>
+            <div>
+                <label>Stage Radius (m): <input type="number" id="s3_radius" value="15" step="any"></label><br>
+                <label>Dry Mass (kg) [excluding fuel]: <input type="number" id="s3_mass" value="15" step="any"></label><br>
+                <label>Fuel Mass (kg): <input type="number" id="s3_fuel" value="40" step="any"></label><br>
+                <label>Burn Rate (kg/s): <input type="number" id="s3_burn" value="2.0" step="any"></label><br>
+                <label>Thrust Force (N): <input type="number" id="s3_thrust" value="1500" step="any"></label>
+            </div>
         </div>
-        <div>
-            <label for="fuelConsumptionRate">Fuel Consumption Rate (kg/sec):</label>
-            <br>
-            <input type="number" id="fuelConsumptionRate" value="0.8" step="any">
-        </div>
-        <div>
-            <label for="thrustForce">Thrust Force (N):</label>
-            <br>
-            <input type="number" id="thrustForce" value="500" step="any">
-        </div>
-        <br>
-        <br>
+        <br><br>
         <button id="startButton">Start Simulation</button>
-        <br>
-        <br>
+        <br><br>
         <button id="resetButton">Reset Simulation</button>
 
     </div>

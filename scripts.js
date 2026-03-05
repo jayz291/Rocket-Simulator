@@ -10,6 +10,12 @@ const G = 6.6743e-11;
 const startButton = document.getElementById("startButton");
 const resetButton = document.getElementById("resetButton");
 const rocketSizeInput = document.getElementById("rocketRadius");
+const singleStageInput = document.getElementById("singleStageInputs");
+const multiStageInput = document.getElementById("multiStageInputs");
+const singleStageMode = document.getElementById("modeSingle");
+const multiStageMode = document.getElementById("modeMulti");
+singleStageMode.addEventListener('change', toggleInterface);
+multiStageMode.addEventListener('change', toggleInterface);
 
 class RocketSimulator {
     constructor(simulation) {
@@ -339,3 +345,14 @@ if (rocketSizeInput) {
         }
     });
 }
+
+function toggleInterface() {
+    if (modeMulti.checked) {
+        singleStageInput.style.display = 'none';
+        multiStageInput.style.display = 'block';
+    } else {
+        singleStageInput.style.display = 'block';
+        multiStageInput.style.display = 'none';
+    }
+}
+
