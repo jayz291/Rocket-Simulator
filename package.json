@@ -1,0 +1,28 @@
+{
+  "name": "y",
+  "version": "1.0.0",
+  "description": "Rocket Simulator",
+  "homepage": "https://github.com/jayz291/Rocket-Simulator#readme",
+  "bugs": {
+    "url": "https://github.com/jayz291/Rocket-Simulator/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jayz291/Rocket-Simulator.git"
+  },
+  "license": "ISC",
+  "author": "Jay Zhong",
+  "type": "module",
+  "main": "scripts.js",
+  "scripts": {
+    "test": "test",
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "three": "^0.183.1"
+  },
+  "devDependencies": {
+    "vite": "^7.3.1"
+  }
+}
