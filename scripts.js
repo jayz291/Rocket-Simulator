@@ -61,6 +61,9 @@ class RocketSimulator {
         this.scene.add(this.launchPad.mesh);
         this.simulating = false;
         this.resetting = false;
+
+        this.detachedStages = [];
+        this.previousStageIndex = 0;
         this.animate = this.animate.bind(this);
         this.animate();
     }
@@ -71,10 +74,15 @@ class RocketSimulator {
             let previousHeight = this.simulation.currentHeight;
             this.simulation.updatePhysics(0.016);
             let deltaY = this.simulation.currentHeight - previousHeight;
-            this.rocket.mesh.position.y = currentStage.rocketRadius * 6 + 0.1 + this.simulation.currentHeight;
+            this.rocket.mesh.position.y = this.simulation.stages[0].rocketRadius * 6 + 0.1 + this.simulation.currentHeight;
+            this.rocket.mesh.updateMatrixWorld(true);
             this.camera.position.y += deltaY;
             this.controls.target.y = this.rocket.mesh.position.y;
             this.controls.maxPolarAngle = Math.PI;
+            if (this.simulation.currentStageIndex > this.previousStageIndex) {
+                this.detachStage(this.previousStageIndex);
+                this.previousStageIndex = this.simulation.currentStageIndex;
+            }
         } else {
             this.simulating = false;
         }
@@ -88,6 +96,14 @@ class RocketSimulator {
             for (let i = 0; i < this.simulation.stages.length; i++) {
                 this.simulation.stages[i].fuelMass = this.simulation.stages[i].originalFuelMass;
             }
+            this.detachedStages.forEach(detachedStage => this.scene.remove(detachedStage.mesh));
+            this.detachedStages = [];
+            this.previousStageIndex = 0;
+            this.simulation.currentStageIndex = 0;
+            this.scene.remove(this.rocket.mesh);
+            this.rocket = new Rocket(this.simulation.stages);
+            this.scene.add(this.rocket.mesh);
+
             this.rocket.mesh.position.y = this.simulation.stages[0].rocketRadius * 6 + 0.1 + this.simulation.currentHeight;
             this.camera.position.y = this.simulation.stages[0].rocketRadius * 6 + 0.1 + this.simulation.currentHeight;
             this.controls.target.y = this.rocket.mesh.position.y;
@@ -104,6 +120,9 @@ class RocketSimulator {
 
         const hasThrust = this.simulating && currentStage.fuelMass > 0;
         this.rocket.updateParticles(hasThrust, currentStage.rocketRadius);
+        for (let i = 0; i < this.detachedStages.length; i++) {
+            this.simulation.updateDroppedStagesPhysics(0.016, this.detachedStages[i], i);
+        }
         
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
@@ -120,6 +139,32 @@ class RocketSimulator {
         this.simulation.stages[stageIndex].rocketRadius = newRadius;
         this.rocket = new Rocket(this.simulation.stages);
         this.scene.add(this.rocket.mesh);
+    }
+    detachStage(stageIndex) {
+        if (!this.rocket.stageMeshes || !this.rocket.stageMeshes[stageIndex]) {
+            return;
+        }
+        let stages = this.simulation.stages;
+        const meshToDetach = this.rocket.stageMeshes[stageIndex];
+        const worldPos = new THREE.Vector3();
+        meshToDetach.getWorldPosition(worldPos);
+        worldPos.y -= 3 * this.simulation.stages[stageIndex].rocketRadius;
+
+        this.rocket.mesh.remove(meshToDetach);
+        meshToDetach.position.copy(worldPos);
+        this.scene.add(meshToDetach);
+
+        this.detachedStages.push({
+            mesh: meshToDetach,
+            velocity: this.simulation.velocity
+        })
+
+        if (stageIndex == 0) {
+            this.rocket.exhaust.position.y = stages[0].rocketRadius * 2 + stages[1].rocketRadius * 2;
+        } else if (stageIndex == 1) {
+            this.rocket.exhaust.position.y = stages[0].rocketRadius * 2 + stages[1].rocketRadius * 4 + 
+                stages[2].rocketRadius * 2;
+        }
     }
 }
 
@@ -208,6 +253,8 @@ class Rocket {
         this.mesh.add(this.stage2);
         this.mesh.add(this.stage3);
         this.mesh.add(this.exhaust);
+
+        this.stageMeshes = [this.stage1, this.stage2, this.stage3];
     }
     buildRocket(stages) {
         let radius = stages[0].rocketRadius;
@@ -365,10 +412,12 @@ class Simulation {
             let currentAirDensity, gravity, force, acceleration;
             let currentStage = this.stages[this.currentStageIndex];
 
-            if (currentStage && currentStage.fuelMass < 0 && this.currentStageIndex < this.stages.length - 1) {
+            if (currentStage && currentStage.fuelMass <= 0 && this.currentStageIndex < this.stages.length - 1) {
                 this.currentStageIndex++;
                 currentStage = this.stages[this.currentStageIndex];
+                
             }
+            this.calculateRocketMass();
 
             if (this.currentHeight < this.atmosphereThickness) {
                 currentAirDensity = this.airDensity * Math.E ** (-this.currentHeight / this.scaleHeight);
@@ -378,19 +427,19 @@ class Simulation {
             gravity = G * this.planetMass / ((this.planetRadius + this.currentHeight) ** 2);
             
             if (currentStage.fuelMass > 0) {
-                force = currentStage.thrustForce - gravity * this.totalMass - /*0.5 **/
+                force = currentStage.thrustForce - gravity * this.totalMass - 0.5 *
                 currentAirDensity * currentStage.crossSectionalArea * (this.velocity ** 2) * Math.sign(this.velocity);
             } else {
-                force = -gravity * this.totalMass - /*0.5 **/
+                force = -gravity * this.totalMass - 0.5 *
                 currentAirDensity * currentStage.crossSectionalArea * (this.velocity ** 2) * Math.sign(this.velocity);
             }
+            console.log(force);
             
             acceleration = force / this.totalMass;
             this.velocity += deltaTime * acceleration;
             this.currentHeight = Math.max(this.currentHeight + this.velocity * deltaTime, 0);
             currentStage.fuelMass = Math.max(currentStage.fuelMass - currentStage.fuelConsumptionRate * deltaTime, 0);
             //this.totalMass = Math.max(this.rocketMass + this.fuelMass, this.rocketMass);
-            this.calculateRocketMass();
             this.time += deltaTime;
 
             if (this.velocity > this.escapeVelocity && this.currentHeight > 100000000) {
@@ -399,6 +448,23 @@ class Simulation {
             if (this.time > 2 && this.currentHeight == 0) {
                 this.finished = true;
             }
+        }
+    }
+    updateDroppedStagesPhysics(deltaTime, stage, stageIndex) {
+        let currentHeight = stage.mesh.position.y;
+        if (currentHeight > this.stages[stageIndex].rocketRadius * 6) {
+            let currentAirDensity, gravity, force, acceleration;
+            if (this.currentHeight < this.atmosphereThickness) {
+                currentAirDensity = this.airDensity * Math.E ** (-currentHeight / this.scaleHeight);
+            } else {
+                currentAirDensity = 0;
+            }
+            gravity = G * this.planetMass / ((this.planetRadius + currentHeight) ** 2);
+            force = -gravity * this.stages[stageIndex].rocketMass - /*0.5 **/
+                currentAirDensity * this.stages[stageIndex].crossSectionalArea * (stage.velocity ** 2) * Math.sign(stage.velocity);
+                     acceleration = force / this.stages[stageIndex].rocketMass;
+            stage.velocity += deltaTime * acceleration;
+            stage.mesh.position.y = Math.max(currentHeight + stage.velocity * deltaTime, 0);
         }
     }
 }
