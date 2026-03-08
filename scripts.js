@@ -22,32 +22,22 @@ multiStageMode.addEventListener('change', toggleInterface);
 
 class RocketSimulator {
     constructor(simulation) {
-        this.scene = new THREE.Scene();
-        this.renderer = new THREE.WebGLRenderer({antialias: true, logarithmicDepthBuffer: true});
-        this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.camera = new THREE.PerspectiveCamera(45, 
-            simulationBox.clientWidth / simulationBox.clientHeight, 1, 10000000);
         this.simulation = simulation;
-        this.init();
+        this.setUpScene();
+        this.setUpRenderer();
+        this.setUpCamera();
+        this.detachedStages = [];
+        this.previousStageIndex = 0;
+        this.animate = this.animate.bind(this);
+        this.animate();
     }
-    init() {
-        this.renderer.setSize(simulationBox.clientWidth, simulationBox.clientHeight);
-        simulationBox.appendChild(this.renderer.domElement);
+    setUpScene() {
+        this.scene = new THREE.Scene();
         this.startColour = new THREE.Color(0x90d5ff);
         this.endColour = new THREE.Color(0x000000);
         this.scene.background = this.startColour;
         this.scene.fog = new THREE.Fog(this.startColour, 10000, 1400000);
         this.scene.add(this.camera);
-
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.5;
-        this.controls.maxPolarAngle = Math.PI / 2;
-
-        this.camera.far = 1200000;
-        this.camera.position.set(20, 10, 20);
-        this.camera.lookAt(0, 12, 0);
 
         const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
         directionalLight.position.set(20000, 20000, 300);
@@ -59,13 +49,25 @@ class RocketSimulator {
         this.scene.add(this.ground.mesh);
         this.scene.add(this.rocket.mesh);
         this.scene.add(this.launchPad.mesh);
-        this.simulating = false;
-        this.resetting = false;
+    }
+    setUpCamera() {
+        this.camera = new THREE.PerspectiveCamera(45, 
+            simulationBox.clientWidth / simulationBox.clientHeight, 1, 10000000);
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.5;
+        this.controls.maxPolarAngle = Math.PI / 2;
 
-        this.detachedStages = [];
-        this.previousStageIndex = 0;
-        this.animate = this.animate.bind(this);
-        this.animate();
+        this.camera.far = 1200000;
+        this.camera.position.set(20, 10, 20);
+        this.camera.lookAt(0, 12, 0);
+    }
+    setUpRenderer() {
+        this.renderer = new THREE.WebGLRenderer({antialias: true, logarithmicDepthBuffer: true});
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.setSize(simulationBox.clientWidth, simulationBox.clientHeight);
+        simulationBox.appendChild(this.renderer.domElement);
     }
     animate() {
         requestAnimationFrame(this.animate);
@@ -102,7 +104,6 @@ class RocketSimulator {
         for (let i = 0; i < this.detachedStages.length; i++) {
             this.simulation.updateDroppedStagesPhysics(0.016, this.detachedStages[i], i);
         }
-        
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
     }
@@ -113,30 +114,16 @@ class RocketSimulator {
         this.scene.add(this.rocket.mesh);
     }
     detachStage(stageIndex) {
-        if (!this.rocket.stageMeshes || !this.rocket.stageMeshes[stageIndex]) {
+        const detachedStage = this.rocket.separateStage(stageIndex, this.simulation.stages);
+        if (!detachedStage) {
             return;
         }
-        let stages = this.simulation.stages;
-        const meshToDetach = this.rocket.stageMeshes[stageIndex];
-        const worldPos = new THREE.Vector3();
-        meshToDetach.getWorldPosition(worldPos);
-        worldPos.y -= 3 * this.simulation.stages[stageIndex].rocketRadius;
-
-        this.rocket.mesh.remove(meshToDetach);
-        meshToDetach.position.copy(worldPos);
-        this.scene.add(meshToDetach);
-
+        this.scene.add(detachedStage);
+    
         this.detachedStages.push({
-            mesh: meshToDetach,
+            mesh: detachedStage,
             velocity: this.simulation.velocity
-        })
-
-        if (stageIndex == 0) {
-            this.rocket.exhaust.position.y = stages[0].rocketRadius * 2 + stages[1].rocketRadius * 2;
-        } else if (stageIndex == 1) {
-            this.rocket.exhaust.position.y = stages[0].rocketRadius * 2 + stages[1].rocketRadius * 4 + 
-                stages[2].rocketRadius * 2;
-        }
+        });
     }
     resetSimulation() {
         this.simulation.currentHeight = 0;
@@ -330,6 +317,27 @@ class Rocket {
             }
         }
         this.particleGeometry.attributes.position.needsUpdate = true;
+    }
+    separateStage(stageIndex, stagesData) {
+        if (!this.stageMeshes || !this.stageMeshes[stageIndex]) {
+            return;
+        }
+        //let stages = this.simulation.stages;
+        const meshToDetach = this.stageMeshes[stageIndex];
+        const worldPos = new THREE.Vector3();
+        meshToDetach.getWorldPosition(worldPos);
+        //worldPos.y -= 3 * stagesData[stageIndex].rocketRadius;
+
+        this.mesh.remove(meshToDetach);
+        meshToDetach.position.copy(worldPos);
+
+        if (stageIndex == 0) {
+            this.exhaust.position.y = stagesData[0].rocketRadius * 2 + stagesData[1].rocketRadius * 2;
+        } else if (stageIndex == 1) {
+            this.exhaust.position.y = stagesData[0].rocketRadius * 2 + stagesData[1].rocketRadius * 4 + 
+                stagesData[2].rocketRadius * 2;
+        }
+        return meshToDetach;
     }
 }
 
