@@ -12,36 +12,28 @@ export class Rocket {
         }
     }
     buildMultiStageRocket(stages) {
-        this.stage1 = new THREE.Group();
+        
         let stage1Radius = stages[0].rocketRadius;
-        const cylinder = new THREE.CylinderGeometry(stage1Radius, stage1Radius, stage1Radius * 4, 32);
+        let stage2Radius = stages[1].rocketRadius;
+        
+        
         const material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
         material.depthWrite = true;
         material.transparent = false;
-        const finShape = new THREE.Shape();
-        finShape.moveTo(stage1Radius, -stage1Radius * 2);
-        finShape.lineTo(stage1Radius * 4, -stage1Radius * 6);
-        finShape.lineTo(stage1Radius, 0);
-        finShape.lineTo(stage1Radius, -stage1Radius * 2);
-        const extrudeSettings = { depth: stage1Radius / 10, bevelEnabled: false };
-        const fin = new THREE.ExtrudeGeometry(finShape, extrudeSettings);
-        const finMesh = new THREE.Mesh(fin, material);
-        const finMesh2 = finMesh.clone();
-        finMesh2.rotation.y += Math.PI * 2 / 3;
+ 
         
-        const finMesh3 = finMesh.clone();
-        finMesh3.rotation.y -= Math.PI * 2 / 3;
+        this.addFins(stage1Radius, material);
 
+        this.stage1 = new THREE.Group();
+        const cylinder = new THREE.CylinderGeometry(stage1Radius, stage1Radius, stage1Radius * 4, 32);
         const stage1Mesh = new THREE.Mesh(cylinder, material);
 
         this.stage1.add(stage1Mesh);
-        this.stage1.add(finMesh);
-        this.stage1.add(finMesh2);
-        this.stage1.add(finMesh3);
+        this.stage1.add(this.fins);
         this.addParticles(stage1Radius)
 
         this.stage2 = new THREE.Group();
-        let stage2Radius = stages[1].rocketRadius;
+        
 
         const cylinder2 = new THREE.CylinderGeometry(stage2Radius, stage2Radius, stage2Radius * 4);
         const stage2Mesh = new THREE.Mesh(cylinder2, material);
@@ -79,6 +71,33 @@ export class Rocket {
         const coneMesh = new THREE.Mesh(cone, material);
         coneMesh.position.y = radius * 4;
 
+        this.addFins(radius, material);
+        this.addParticles(radius);
+
+        this.mesh.add(coneMesh);
+        this.mesh.add(cylinderMesh);
+        this.mesh.add(this.fins);
+        this.mesh.add(this.exhaust);
+    }
+    buildStage(radius, nextRadius, material) {
+        let stage = new THREE.Group();
+        const totalHeight = radius * 4; 
+        const bottomHeight = totalHeight * 0.75; 
+        const topHeight = totalHeight * 0.25;
+
+        const cylinder = new THREE.CylinderGeometry(radius, radius, bottomHeight, 32);
+        const cylinder2 = new THREE.CylinderGeometry(nextRadius, radius, topHeight, 32);
+        const cylinderMesh = new THREE.Mesh(cylinder, material);
+        const cylinder2Mesh = new THREE.Mesh(cylinder2, material);
+        cylinderMesh.position.y = 0;
+        cylinder2Mesh.position.y = (topHeight / 2);
+
+        stage.add(cylinderMesh);
+        stage.add(cylinder2Mesh);
+        return stage;
+    }
+    addFins(radius, material) {
+        this.fins = new THREE.Group();
         const finShape = new THREE.Shape();
         finShape.moveTo(radius, -radius * 2);
         finShape.lineTo(radius * 4, -radius * 6);
@@ -93,14 +112,9 @@ export class Rocket {
         
         const finMesh3 = finMesh.clone();
         finMesh3.rotation.y -= Math.PI * 2 / 3;
-        this.addParticles(radius);
-
-        this.mesh.add(coneMesh);
-        this.mesh.add(cylinderMesh);
-        this.mesh.add(finMesh);
-        this.mesh.add(finMesh2);
-        this.mesh.add(finMesh3);
-        this.mesh.add(this.exhaust);
+        this.fins.add(finMesh);
+        this.fins.add(finMesh2);
+        this.fins.add(finMesh3);
     }
     addParticles(radius) {
         this.particleCount = 1000;
