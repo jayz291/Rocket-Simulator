@@ -1,11 +1,21 @@
 import { Rocket } from "./rocket.js";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { Simulation } from "./scripts.js"
 
-const simulationBox = document.getElementById('simulation');
+const simulationBox = document.getElementById('simulation') as HTMLDivElement;
 
 export class SceneManager {
-    constructor(simulation) {
+    scene: THREE.Scene;
+    startColour: THREE.Color;
+    endColour: THREE.Color;
+    ground: Ground;
+    launchPad: LaunchPad;
+    camera!: THREE.PerspectiveCamera;
+    controls!: OrbitControls;
+    renderer!: THREE.WebGLRenderer;
+    rocket: Rocket;
+    constructor(simulation: Simulation) {
         this.scene = new THREE.Scene();
         this.startColour = new THREE.Color(0x90d5ff);
         this.endColour = new THREE.Color(0x000000);
@@ -17,7 +27,7 @@ export class SceneManager {
         directionalLight.position.set(20000, 20000, 300);
         this.scene.add(directionalLight);
 
-        this.ground = new Ground(0x00ff00);
+        this.ground = new Ground(0x00ff00 as any);
         this.launchPad = new LaunchPad();
         this.rocket = new Rocket(simulation.stages);
         this.scene.add(this.ground.mesh);
@@ -26,10 +36,10 @@ export class SceneManager {
         this.setUpRenderer();
         this.setUpCamera();
     }
-    setBackgroundColor(alpha) {
+    setBackgroundColor(alpha: any) {
         let currentColour = new THREE.Color().lerpColors(this.startColour, this.endColour, alpha);
         this.scene.background = currentColour;
-        this.scene.fog.color = currentColour;
+        this.scene.fog!.color = currentColour;
     }
     setUpCamera() {
         this.camera = new THREE.PerspectiveCamera(45, 
@@ -50,7 +60,7 @@ export class SceneManager {
         this.renderer.setSize(simulationBox.clientWidth, simulationBox.clientHeight);
         simulationBox.appendChild(this.renderer.domElement);
     }
-    resetScene(simulation) {
+    resetScene(simulation: Simulation) {
         this.scene.remove(this.rocket.mesh);
         this.rocket = new Rocket(simulation.stages);
         this.scene.add(this.rocket.mesh);
@@ -62,7 +72,7 @@ export class SceneManager {
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
     }
-    updatePosition(simulation, deltaY) {
+    updatePosition(simulation: Simulation, deltaY: number) {
         this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 6 + 0.1 + simulation.currentHeight;
         this.rocket.mesh.updateMatrixWorld(true);
         this.camera.position.y += deltaY;
@@ -72,7 +82,10 @@ export class SceneManager {
 }
 
 class Ground {
-    constructor(color) {
+    geometry: THREE.PlaneGeometry;
+    material: THREE.MeshLambertMaterial;
+    mesh: THREE.Mesh;
+    constructor(color: THREE.Color) {
         this.geometry = new THREE.PlaneGeometry(2800000, 2800000);
         this.material = new THREE.MeshLambertMaterial({ color: color});
         this.mesh = new THREE.Mesh(this.geometry, this.material);
@@ -82,6 +95,9 @@ class Ground {
 }
 
 class LaunchPad {
+    geometry: THREE.PlaneGeometry;
+    material: THREE.MeshLambertMaterial;
+    mesh: THREE.Mesh;
     constructor() {
         this.geometry = new THREE.PlaneGeometry(10, 10);
         this.material = new THREE.MeshLambertMaterial({color: 0x808080});

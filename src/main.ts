@@ -1,22 +1,23 @@
 import { Simulation } from "./scripts.js";
 import { RocketSimulator } from "./scripts.js"
 import { getRocketData, getPlanetData } from "./scripts.js"
+import type { StageData } from "./types.js"
+
+export const startButton = document.getElementById("startButton") as HTMLButtonElement;
+const resetButton = document.getElementById("resetButton") as HTMLButtonElement;
+const rocketSizeInput = document.getElementById("rocketRadius") as HTMLInputElement;
+const stage1RadiusInput = document.getElementById("s1_radius") as HTMLInputElement;
+const stage2RadiusInput = document.getElementById("s2_radius") as HTMLInputElement;
+const stage3RadiusInput = document.getElementById("s3_radius") as HTMLInputElement;
+const singleStageInput = document.getElementById("singleStageInputs") as HTMLInputElement;
+const multiStageInput = document.getElementById("multiStageInputs") as HTMLInputElement;
+const singleStageMode = document.getElementById("modeSingle") as HTMLInputElement;
+export const multiStageMode = document.getElementById("modeMulti") as HTMLInputElement;
+singleStageMode.addEventListener('change', toggleInterface);
+multiStageMode.addEventListener('change', toggleInterface);
 
 const currentSimulation = new Simulation();
 const rocketSimulator = new RocketSimulator(currentSimulation);
-
-const startButton = document.getElementById("startButton");
-const resetButton = document.getElementById("resetButton");
-const rocketSizeInput = document.getElementById("rocketRadius");
-const stage1RadiusInput = document.getElementById("s1_radius");
-const stage2RadiusInput = document.getElementById("s2_radius");
-const stage3RadiusInput = document.getElementById("s3_radius");
-const singleStageInput = document.getElementById("singleStageInputs");
-const multiStageInput = document.getElementById("multiStageInputs");
-const singleStageMode = document.getElementById("modeSingle");
-const multiStageMode = document.getElementById("modeMulti");
-singleStageMode.addEventListener('change', toggleInterface);
-multiStageMode.addEventListener('change', toggleInterface);
 
 startButton.addEventListener('click', () => {
     addData();
@@ -34,8 +35,9 @@ resetButton.addEventListener('click', () => {
 });
 
 if (rocketSizeInput) {
-    rocketSizeInput.addEventListener('input', (event) => {
-        const newRadius = parseFloat(event.target.value);
+    rocketSizeInput.addEventListener('input', (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const newRadius = parseFloat(target.value);
         if (!isNaN(newRadius) && newRadius > 0) {
             rocketSimulator.updateRocket(newRadius);
         }
@@ -43,8 +45,9 @@ if (rocketSizeInput) {
 }
 
 if (stage1RadiusInput) {
-    stage1RadiusInput.addEventListener('input', (event) => {
-        const newRadius = parseFloat(event.target.value);
+    stage1RadiusInput.addEventListener('input', (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const newRadius = parseFloat(target.value);
         if (!isNaN(newRadius) && newRadius > 0) {
             rocketSimulator.simulation.stages[0].rocketRadius = newRadius;
             rocketSimulator.updateRocket(newRadius, 0);
@@ -53,8 +56,9 @@ if (stage1RadiusInput) {
 }
 
 if (stage2RadiusInput) {
-    stage2RadiusInput.addEventListener('input', (event) => {
-        const newRadius = parseFloat(event.target.value);
+    stage2RadiusInput.addEventListener('input', (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const newRadius = parseFloat(target.value);
         if (!isNaN(newRadius) && newRadius > 0) {
             rocketSimulator.simulation.stages[1].rocketRadius = newRadius;
             rocketSimulator.updateRocket(newRadius, 1);
@@ -63,8 +67,9 @@ if (stage2RadiusInput) {
 }
 
 if (stage3RadiusInput) {
-    stage3RadiusInput.addEventListener('input', (event) => {
-        const newRadius = parseFloat(event.target.value);
+    stage3RadiusInput.addEventListener('input', (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const newRadius = parseFloat(target.value);
         if (!isNaN(newRadius) && newRadius > 0) {
             rocketSimulator.simulation.stages[2].rocketRadius = newRadius;
             rocketSimulator.updateRocket(newRadius, 2);
@@ -73,8 +78,8 @@ if (stage3RadiusInput) {
 }
 
 function toggleInterface() {
-    let currentRadius;
-    if (modeMulti.checked) {
+    let currentRadius: number = 0;
+    if (multiStageMode.checked) {
         singleStageInput.style.display = 'none';
         multiStageInput.style.display = 'block';
         if (stage1RadiusInput) {
@@ -98,7 +103,7 @@ function addData() {
     const planetData = getPlanetData();
     currentSimulation.stages = [];
 
-    if (!modeMulti.checked) {
+    if (!multiStageMode.checked) {
         const rocketData = getRocketData();
         currentSimulation.stages.push(rocketData);
     } else {
@@ -113,15 +118,23 @@ function addData() {
     currentSimulation.updateStats(planetData);
 }
 
-function getStageData(stageNumber) {
-    const StageData = {
-        rocketRadius: parseFloat(document.getElementById(`s${stageNumber}_radius`).value),
-        rocketMass: parseFloat(document.getElementById(`s${stageNumber}_mass`).value),
-        fuelMass: parseFloat(document.getElementById(`s${stageNumber}_fuel`).value),
-        fuelConsumptionRate: parseFloat(document.getElementById(`s${stageNumber}_burn`).value),
-        thrustForce: parseFloat(document.getElementById(`s${stageNumber}_thrust`).value),
-        originalFuelMass: parseFloat(document.getElementById(`s${stageNumber}_fuel`).value),
-        crossSectionalArea: Math.PI * parseFloat(document.getElementById(`s${stageNumber}_radius`).value) ** 2
-    }
-    return StageData;
+function getStageData(stageNumber: number): StageData {
+    const getInputValue = (idSuffix: string): number => {
+        const id = `s${stageNumber}_${idSuffix}`;
+        const element = document.getElementById(id) as HTMLInputElement;
+        return parseFloat(element.value);
+    };
+
+    const radius = getInputValue('radius');
+    const fuelMass = getInputValue('fuel');
+
+    return {
+        rocketRadius: radius,
+        rocketMass: getInputValue('mass'),
+        fuelMass: fuelMass,
+        fuelConsumptionRate: getInputValue('burn'),
+        thrustForce: getInputValue('thrust'),
+        originalFuelMass: fuelMass,
+        crossSectionalArea: Math.PI * (radius ** 2)
+    };
 }

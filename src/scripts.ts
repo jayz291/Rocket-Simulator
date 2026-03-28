@@ -1,14 +1,22 @@
 
-import { Rocket } from "./rocket.js"
-import { SceneManager } from "./scene.js"
+import { Rocket } from "./rocket.js";
+import { SceneManager } from "./scene.js";
+import { startButton } from "./main.js";
+import type { StageData, PlanetData } from "./types.js";
 
-const altitudeStat = document.getElementById('altitude');
-const velocityStat = document.getElementById('velocity');
-const timeStat = document.getElementById('time');
+const altitudeStat = document.getElementById('altitude') as HTMLSpanElement;
+const velocityStat = document.getElementById('velocity') as HTMLSpanElement;
+const timeStat = document.getElementById('time') as HTMLSpanElement;
 const G = 6.6743e-11;
 
 export class RocketSimulator {
-    constructor(simulation) {
+    simulation: Simulation;
+    sceneManager: SceneManager;
+    previousStageIndex: number;
+    simulating!: boolean;
+    resetting!: boolean;
+    detachedStages: any [];
+    constructor(simulation: Simulation) {
         this.simulation = simulation;
         this.sceneManager = new SceneManager(simulation);
         this.detachedStages = [];
@@ -47,13 +55,13 @@ export class RocketSimulator {
         }
         this.sceneManager.renderUpdate();
     }
-    updateRocket(newRadius, stageIndex = 0) {
+    updateRocket(newRadius: number, stageIndex = 0) {
         this.sceneManager.scene.remove(this.sceneManager.rocket.mesh);
         this.simulation.stages[stageIndex].rocketRadius = newRadius;
         this.sceneManager.rocket = new Rocket(this.simulation.stages);
         this.sceneManager.scene.add(this.sceneManager.rocket.mesh);
     }
-    detachStage(stageIndex) {
+    detachStage(stageIndex: number) {
         const detachedStage = this.sceneManager.rocket.separateStage(stageIndex, this.simulation.stages);
         if (!detachedStage) {
             return;
@@ -84,31 +92,51 @@ export class RocketSimulator {
     }
 }
 
+const getInputValue = (id: string): number => {
+    const element = document.getElementById(id) as HTMLInputElement;
+    return parseFloat(element.value);
+};
+
 export function getPlanetData() {
-    const planetData = {
-        planetMass: parseFloat(document.getElementById('planetMass').value),
-        planetRadius: parseFloat(document.getElementById('planetRadius').value) * 1000,
-        atmosphereThickness: parseFloat(document.getElementById('atmosphereThickness').value) * 1000,
-        airDensity: parseFloat(document.getElementById('airDensity').value),
-        scaleHeight: parseFloat(document.getElementById('scaleHeight').value) * 1000,
-    }
-    return planetData;
+    return {
+        planetMass: getInputValue('planetMass'),
+        planetRadius: getInputValue('planetRadius') * 1000,
+        atmosphereThickness: getInputValue('atmosphereThickness') * 1000,
+        airDensity: getInputValue('airDensity'),
+        scaleHeight: getInputValue('scaleHeight') * 1000,
+    };
 }
 
 export function getRocketData() {
-    const rocketData = {
-        rocketRadius: parseFloat(document.getElementById('rocketRadius').value),
-        rocketMass: parseFloat(document.getElementById('rocketMass').value),
-        fuelMass: parseFloat(document.getElementById('fuelMass').value),
-        fuelConsumptionRate: parseFloat(document.getElementById('fuelConsumptionRate').value),
-        thrustForce: parseFloat(document.getElementById('thrustForce').value),
-        originalFuelMass: parseFloat(document.getElementById('rocketMass').value),
-        crossSectionalArea: Math.PI * parseFloat(document.getElementById('rocketRadius').value) ** 2
+    const radius = getInputValue('rocketRadius');
+    const mass = getInputValue('rocketMass');
+    
+    return {
+        rocketRadius: radius,
+        rocketMass: mass,
+        fuelMass: getInputValue('fuelMass'),
+        fuelConsumptionRate: getInputValue('fuelConsumptionRate'),
+        thrustForce: getInputValue('thrustForce'),
+        originalFuelMass: mass, 
+        crossSectionalArea: Math.PI * (radius ** 2)
     };
-    return rocketData;
 }
 
 export class Simulation {
+    currentHeight: number;
+    velocity: number;
+    planetMass!: number;
+    planetRadius!: number;
+    escapeVelocity: number;
+    currentStageIndex: number;
+    time: number;
+    finished: boolean;
+    atmosphereThickness!: number;
+    airDensity!: number;
+    scaleHeight!: number;
+    crossSectionalArea!: number;
+    totalMass!: number;
+    stages: StageData[];
     constructor() {
         const planetData = getPlanetData();
         this.currentHeight = 0;
@@ -125,7 +153,7 @@ export class Simulation {
         this.finished = false;
         this.updateStats(planetData);
     }
-    updateStats(data) {
+    updateStats(data: PlanetData) {
         this.planetMass = data.planetMass;
         this.planetRadius = data.planetRadius;
         this.atmosphereThickness = data.atmosphereThickness;
@@ -148,7 +176,7 @@ export class Simulation {
             this.totalMass += this.stages[i].rocketMass + this.stages[i].fuelMass;
         }
     }
-    updatePhysics(deltaTime) {
+    updatePhysics(deltaTime: number) {
         if (!this.finished) {
             let currentAirDensity, gravity, force, acceleration;
             let currentStage = this.stages[this.currentStageIndex];
@@ -191,7 +219,7 @@ export class Simulation {
             }
         }
     }
-    updateDroppedStagesPhysics(deltaTime, stage, stageIndex) {
+    updateDroppedStagesPhysics(deltaTime: number, stage: any, stageIndex: number) {
         let currentHeight = stage.mesh.position.y;
         if (currentHeight > this.stages[stageIndex].rocketRadius * 6) {
             let currentAirDensity, gravity, force, acceleration;

@@ -1,17 +1,29 @@
 import * as THREE from 'three';
+import { multiStageMode } from "./main.js";
+import type { StageData } from './types.js';
 
 export class Rocket {
-    constructor(stages) {
+    mesh: THREE.Group;
+    stage1!: THREE.Group;
+    stage2!: THREE.Group;
+    stage3!: THREE.Group;
+    stageMeshes!: THREE.Group[];
+    fins!: THREE.Group;
+    exhaust!: THREE.Points;
+    particleCount!: number;
+    particleGeometry!: THREE.BufferGeometry;
+    particleVelocities!: {x: number, y: number, z: number } [];
+    constructor(stages: any[]) {
         //console.log(stages);
         this.mesh = new THREE.Group();
         this.mesh.position.set(0, stages[0].rocketRadius * 6, 0);
-        if (modeMulti.checked) {
+        if (multiStageMode.checked) {
             this.buildMultiStageRocket(stages);
         } else {
             this.buildRocket(stages);
         }
     }
-    buildMultiStageRocket(stages) {
+    buildMultiStageRocket(stages: any[]) {
         
         let stage1Radius = stages[0].rocketRadius;
         let stage2Radius = stages[1].rocketRadius;
@@ -59,7 +71,7 @@ export class Rocket {
 
         this.stageMeshes = [this.stage1, this.stage2, this.stage3];
     }
-    buildRocket(stages) {
+    buildRocket(stages: any[]) {
         let radius = stages[0].rocketRadius;
         const cylinder = new THREE.CylinderGeometry(radius, radius, radius * 6, 32);
         const material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
@@ -79,7 +91,7 @@ export class Rocket {
         this.mesh.add(this.fins);
         this.mesh.add(this.exhaust);
     }
-    buildStage(radius, nextRadius, material) {
+    buildStage(radius: number, nextRadius: number, material: THREE.MeshLambertMaterial) {
         let stage = new THREE.Group();
         const totalHeight = radius * 4; 
         const bottomHeight = totalHeight * 0.75; 
@@ -96,7 +108,7 @@ export class Rocket {
         stage.add(cylinder2Mesh);
         return stage;
     }
-    addFins(radius, material) {
+    addFins(radius: number, material: THREE.MeshLambertMaterial) {
         this.fins = new THREE.Group();
         const finShape = new THREE.Shape();
         finShape.moveTo(radius, -radius * 2);
@@ -116,7 +128,7 @@ export class Rocket {
         this.fins.add(finMesh2);
         this.fins.add(finMesh3);
     }
-    addParticles(radius) {
+    addParticles(radius: number) {
         this.particleCount = 1000;
         const positions = new Float32Array(this.particleCount * 3);
         this.particleVelocities = [];
@@ -145,7 +157,7 @@ export class Rocket {
         });
         this.exhaust = new THREE.Points(this.particleGeometry, thrustMaterial);
     }
-    updateParticles(isThrusting, radius) {
+    updateParticles(isThrusting: boolean, radius: number) {
         this.exhaust.visible = isThrusting;
         if (!isThrusting) {
             return;
@@ -163,7 +175,7 @@ export class Rocket {
         }
         this.particleGeometry.attributes.position.needsUpdate = true;
     }
-    separateStage(stageIndex, stagesData) {
+    separateStage(stageIndex: number, stagesData: StageData[]) {
         if (!this.stageMeshes || !this.stageMeshes[stageIndex]) {
             return;
         }
