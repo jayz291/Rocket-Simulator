@@ -11,12 +11,18 @@ export class Rocket {
     fins!: THREE.Group;
     exhaust!: THREE.Points;
     particleCount!: number;
+    particleHeight!: number;
     particleGeometry!: THREE.BufferGeometry;
     particleVelocities!: {x: number, y: number, z: number } [];
     constructor(stages: any[]) {
         //console.log(stages);
         this.mesh = new THREE.Group();
-        this.mesh.position.set(0, stages[0].rocketRadius * 6, 0);
+        if (multiStageMode.checked) {
+            this.mesh.position.set(0, stages[0].rocketRadius * 4, 0);
+        } else {
+            this.mesh.position.set(0, stages[0].rocketRadius * 6, 0);
+        }
+        
         if (multiStageMode.checked) {
             this.buildMultiStageRocket(stages);
         } else {
@@ -27,33 +33,43 @@ export class Rocket {
         
         let stage1Radius = stages[0].rocketRadius;
         let stage2Radius = stages[1].rocketRadius;
-        
+        let stage3Radius = stages[2].rocketRadius;
         
         const material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
         material.depthWrite = true;
         material.transparent = false;
  
         
-        this.addFins(stage1Radius, material);
+        this.addFins(stage1Radius, material, true);
 
         this.stage1 = new THREE.Group();
-        const cylinder = new THREE.CylinderGeometry(stage1Radius, stage1Radius, stage1Radius * 4, 32);
+        const cylinder = new THREE.CylinderGeometry(stage1Radius, stage1Radius, stage1Radius * 3, 32);
         const stage1Mesh = new THREE.Mesh(cylinder, material);
-
+        const transitionCylinder1 = new THREE.CylinderGeometry(stage2Radius, stage1Radius, stage1Radius, 32);
+        const transitionCylinderMesh1 = new THREE.Mesh(transitionCylinder1, material);
+        stage1Mesh.position.y = 0;
+        transitionCylinderMesh1.position.y = stage1Radius * 2;
         this.stage1.add(stage1Mesh);
+        this.stage1.add(transitionCylinderMesh1);
         this.stage1.add(this.fins);
-        this.addParticles(stage1Radius)
+        this.particleHeight = -stage1Radius * 2;
+        this.addParticles(stage1Radius);
 
         this.stage2 = new THREE.Group();
         
-
-        const cylinder2 = new THREE.CylinderGeometry(stage2Radius, stage2Radius, stage2Radius * 4);
+        const cylinder2 = new THREE.CylinderGeometry(stage2Radius, stage2Radius, stage2Radius * 3);
         const stage2Mesh = new THREE.Mesh(cylinder2, material);
+        console.log(stage2Radius);
+        console.log(stage3Radius);
+        const transitionCylinder2 = new THREE.CylinderGeometry(stage3Radius, stage2Radius, stage2Radius, 32);
+        const transitionCylinderMesh2 = new THREE.Mesh(transitionCylinder2, material);
         stage2Mesh.position.y = stage1Radius * 2 + stage2Radius * 2;
+        transitionCylinderMesh2.position.y = stage1Radius * 2 + stage2Radius * 4;
         this.stage2.add(stage2Mesh);
+        this.stage2.add(transitionCylinderMesh2);
 
         this.stage3 = new THREE.Group();
-        let stage3Radius = stages[2].rocketRadius;
+  
         const cylinder3 = new THREE.CylinderGeometry(stage3Radius, stage3Radius, stage3Radius * 4);
         const stage3Mesh = new THREE.Mesh(cylinder3, material);
         stage3Mesh.position.y = stage1Radius * 2 + stage2Radius * 4 + stage3Radius * 2;
@@ -83,7 +99,8 @@ export class Rocket {
         const coneMesh = new THREE.Mesh(cone, material);
         coneMesh.position.y = radius * 4;
 
-        this.addFins(radius, material);
+        this.addFins(radius, material, false);
+        this.particleHeight = -3 * radius;
         this.addParticles(radius);
 
         this.mesh.add(coneMesh);
@@ -91,30 +108,21 @@ export class Rocket {
         this.mesh.add(this.fins);
         this.mesh.add(this.exhaust);
     }
-    buildStage(radius: number, nextRadius: number, material: THREE.MeshLambertMaterial) {
-        let stage = new THREE.Group();
-        const totalHeight = radius * 4; 
-        const bottomHeight = totalHeight * 0.75; 
-        const topHeight = totalHeight * 0.25;
-
-        const cylinder = new THREE.CylinderGeometry(radius, radius, bottomHeight, 32);
-        const cylinder2 = new THREE.CylinderGeometry(nextRadius, radius, topHeight, 32);
-        const cylinderMesh = new THREE.Mesh(cylinder, material);
-        const cylinder2Mesh = new THREE.Mesh(cylinder2, material);
-        cylinderMesh.position.y = 0;
-        cylinder2Mesh.position.y = (topHeight / 2);
-
-        stage.add(cylinderMesh);
-        stage.add(cylinder2Mesh);
-        return stage;
-    }
-    addFins(radius: number, material: THREE.MeshLambertMaterial) {
+    addFins(radius: number, material: THREE.MeshLambertMaterial, isMultiStage: boolean) {
         this.fins = new THREE.Group();
         const finShape = new THREE.Shape();
-        finShape.moveTo(radius, -radius * 2);
-        finShape.lineTo(radius * 4, -radius * 6);
-        finShape.lineTo(radius, 0);
-        finShape.lineTo(radius, -radius * 2);
+        if (!isMultiStage) {
+            finShape.moveTo(radius, -radius * 2);
+            finShape.lineTo(radius * 4, -radius * 6);
+            finShape.lineTo(radius, 0);
+            finShape.lineTo(radius, -radius * 2);
+        } else {
+            finShape.moveTo(radius, -radius * 1.5);
+            finShape.lineTo(radius * 3, -radius * 4);
+            finShape.lineTo(radius, 0);
+            finShape.lineTo(radius, -radius * 1.5);
+        }
+ 
         const extrudeSettings = { depth: radius / 10, bevelEnabled: false };
         const fin = new THREE.ExtrudeGeometry(finShape, extrudeSettings);
         const finMesh = new THREE.Mesh(fin, material);
@@ -135,7 +143,7 @@ export class Rocket {
 
         for (let i = 0; i < this.particleCount; i++) {
             positions[i * 3] = (Math.random() - 0.5) * radius;
-            positions[i * 3 + 1] = -radius * 3 + (Math.random() * radius * 2);
+            positions[i * 3 + 1] = this.particleHeight + (Math.random() * radius * 2);
             positions[i * 3 + 2] = (Math.random() - 0.5) * radius;
             this.particleVelocities.push({
                 x: (Math.random() - 0.5) * 0.1,
@@ -169,7 +177,7 @@ export class Rocket {
             positions[i * 3 + 2] += this.particleVelocities[i].z;
             if (positions[i * 3 + 1] < -radius * 12) {
                 positions[i * 3] = (Math.random() - 0.5) * radius;
-                positions[i * 3 + 1] = -radius * 3;
+                positions[i * 3 + 1] = this.particleHeight;
                 positions[i * 3 + 2] = (Math.random() - 0.5) * radius;
             }
         }
@@ -183,6 +191,11 @@ export class Rocket {
         const meshToDetach = this.stageMeshes[stageIndex];
         const worldPos = new THREE.Vector3();
         meshToDetach.getWorldPosition(worldPos);
+        if (stageIndex == 0) {
+            worldPos.y -= 2 * stagesData[0].rocketRadius;
+        } else if (stageIndex == 1) {
+            worldPos.y -= 2 * stagesData[1].rocketRadius;
+        }
         //worldPos.y -= 3 * stagesData[stageIndex].rocketRadius;
 
         this.mesh.remove(meshToDetach);

@@ -2,6 +2,7 @@ import { Rocket } from "./rocket.js";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Simulation } from "./scripts.js"
+import { multiStageMode } from "./main.js";
 
 const simulationBox = document.getElementById('simulation') as HTMLDivElement;
 
@@ -64,7 +65,11 @@ export class SceneManager {
         this.scene.remove(this.rocket.mesh);
         this.rocket = new Rocket(simulation.stages);
         this.scene.add(this.rocket.mesh);
-        this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 6 + 0.1 + simulation.currentHeight;
+        if (multiStageMode.checked) {
+            this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 4 + 0.1 + simulation.currentHeight;
+        } else {
+            this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 6 + 0.1 + simulation.currentHeight;
+        }
         this.camera.position.y = simulation.stages[0].rocketRadius * 6 + 0.1 + simulation.currentHeight;
         this.controls.target.y = this.rocket.mesh.position.y;
     }
@@ -73,7 +78,12 @@ export class SceneManager {
         this.renderer.render(this.scene, this.camera);
     }
     updatePosition(simulation: Simulation, deltaY: number) {
-        this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 6 + 0.1 + simulation.currentHeight;
+        if (multiStageMode.checked) {
+            this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 4 + 0.1 + simulation.currentHeight;
+        } else {
+            this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 6 + 0.1 + simulation.currentHeight;
+        }
+        
         this.rocket.mesh.updateMatrixWorld(true);
         this.camera.position.y += deltaY;
         this.controls.target.y = this.rocket.mesh.position.y;
