@@ -1,7 +1,7 @@
 import { Rocket } from "./rocket.js";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Simulation } from "./scripts.js"
+import { SimulationData } from "./data.js"
 import { multiStageMode } from "./main.js";
 
 const simulationBox = document.getElementById('simulation') as HTMLDivElement;
@@ -16,7 +16,7 @@ export class SceneManager {
     controls!: OrbitControls;
     renderer!: THREE.WebGLRenderer;
     rocket: Rocket;
-    constructor(simulation: Simulation) {
+    constructor(simulation: SimulationData) {
         this.scene = new THREE.Scene();
         this.startColour = new THREE.Color(0x90d5ff);
         this.endColour = new THREE.Color(0x000000);
@@ -61,7 +61,7 @@ export class SceneManager {
         this.renderer.setSize(simulationBox.clientWidth, simulationBox.clientHeight);
         simulationBox.appendChild(this.renderer.domElement);
     }
-    resetScene(simulation: Simulation) {
+    resetScene(simulation: SimulationData) {
         this.scene.remove(this.rocket.mesh);
         this.rocket = new Rocket(simulation.stages);
         this.scene.add(this.rocket.mesh);
@@ -77,7 +77,7 @@ export class SceneManager {
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
     }
-    updatePosition(simulation: Simulation, deltaY: number) {
+    updatePosition(simulation: SimulationData, deltaY: number) {
         if (multiStageMode.checked) {
             this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 4 + 0.1 + simulation.currentHeight;
         } else {

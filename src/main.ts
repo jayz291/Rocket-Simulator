@@ -1,6 +1,6 @@
-import { Simulation } from "./scripts.js";
-import { RocketSimulator } from "./scripts.js"
-import { getRocketData, getPlanetData } from "./scripts.js"
+import { SimulationData } from "./data.js";
+import { RocketSimulator } from "./simulation.js"
+import { getRocketData, getPlanetData } from "./data.js"
 import type { StageData } from "./types.js"
 
 export const startButton = document.getElementById("startButton") as HTMLButtonElement;
@@ -16,7 +16,7 @@ export const multiStageMode = document.getElementById("modeMulti") as HTMLInputE
 singleStageMode.addEventListener('change', toggleInterface);
 multiStageMode.addEventListener('change', toggleInterface);
 
-const currentSimulation = new Simulation();
+const currentSimulation = new SimulationData();
 const rocketSimulator = new RocketSimulator(currentSimulation);
 
 startButton.addEventListener('click', () => {

@@ -170,9 +170,9 @@ export class Rocket {
         if (!isThrusting) {
             return;
         }
-        const positions = this.particleGeometry.attributes.position.array;
+        const positions = this.particleGeometry.attributes.position!.array;
         for (let i = 0; i < this.particleCount; i++) {
-            positions[i * 3] += this.particleVelocities[i].x;
+            positions[i * 3] += this.particleVelocities[i]!.x;
             positions[i * 3 + 1] += this.particleVelocities[i].y;
             positions[i * 3 + 2] += this.particleVelocities[i].z;
             if (positions[i * 3 + 1] < -radius * 12) {
@@ -192,9 +192,9 @@ export class Rocket {
         const worldPos = new THREE.Vector3();
         meshToDetach.getWorldPosition(worldPos);
         if (stageIndex == 0) {
-            worldPos.y -= 2 * stagesData[0].rocketRadius;
+            worldPos.y -= 2 * stagesData[0]!.rocketRadius;
         } else if (stageIndex == 1) {
-            worldPos.y -= 2 * stagesData[1].rocketRadius;
+            worldPos.y -= (2 * stagesData[1].rocketRadius + 2 * stagesData[0].rocketRadius);
         }
         //worldPos.y -= 3 * stagesData[stageIndex].rocketRadius;
 
