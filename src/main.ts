@@ -49,7 +49,7 @@ if (stage1RadiusInput) {
         const target = event.target as HTMLInputElement;
         const newRadius = parseFloat(target.value);
         if (!isNaN(newRadius) && newRadius > 0) {
-            rocketSimulator.simulation.stages[0].rocketRadius = newRadius;
+            rocketSimulator.simulation.stages[0]!.rocketRadius = newRadius;
             rocketSimulator.updateRocket(newRadius, 0);
         }
     })
@@ -60,7 +60,7 @@ if (stage2RadiusInput) {
         const target = event.target as HTMLInputElement;
         const newRadius = parseFloat(target.value);
         if (!isNaN(newRadius) && newRadius > 0) {
-            rocketSimulator.simulation.stages[1].rocketRadius = newRadius;
+            rocketSimulator.simulation.stages[1]!.rocketRadius = newRadius;
             rocketSimulator.updateRocket(newRadius, 1);
         }
     })
@@ -71,7 +71,7 @@ if (stage3RadiusInput) {
         const target = event.target as HTMLInputElement;
         const newRadius = parseFloat(target.value);
         if (!isNaN(newRadius) && newRadius > 0) {
-            rocketSimulator.simulation.stages[2].rocketRadius = newRadius;
+            rocketSimulator.simulation.stages[2]!.rocketRadius = newRadius;
             rocketSimulator.updateRocket(newRadius, 2);
         }
     })

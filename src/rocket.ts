@@ -172,16 +172,16 @@ export class Rocket {
         }
         const positions = this.particleGeometry.attributes.position!.array;
         for (let i = 0; i < this.particleCount; i++) {
-            positions[i * 3] += this.particleVelocities[i]!.x;
-            positions[i * 3 + 1] += this.particleVelocities[i].y;
-            positions[i * 3 + 2] += this.particleVelocities[i].z;
-            if (positions[i * 3 + 1] < -radius * 12) {
+            positions[i * 3]! += this.particleVelocities[i]!.x;
+            positions[i * 3 + 1]! += this.particleVelocities[i]!.y;
+            positions[i * 3 + 2]! += this.particleVelocities[i]!.z;
+            if (positions[i * 3 + 1]! < -radius * 12) {
                 positions[i * 3] = (Math.random() - 0.5) * radius;
                 positions[i * 3 + 1] = this.particleHeight;
                 positions[i * 3 + 2] = (Math.random() - 0.5) * radius;
             }
         }
-        this.particleGeometry.attributes.position.needsUpdate = true;
+        this.particleGeometry.attributes.position!.needsUpdate = true;
     }
     separateStage(stageIndex: number, stagesData: StageData[]) {
         if (!this.stageMeshes || !this.stageMeshes[stageIndex]) {
@@ -194,7 +194,7 @@ export class Rocket {
         if (stageIndex == 0) {
             worldPos.y -= 2 * stagesData[0]!.rocketRadius;
         } else if (stageIndex == 1) {
-            worldPos.y -= (2 * stagesData[1].rocketRadius + 2 * stagesData[0].rocketRadius);
+            worldPos.y -= (2 * stagesData[1]!.rocketRadius + 2 * stagesData[0]!.rocketRadius);
         }
         //worldPos.y -= 3 * stagesData[stageIndex].rocketRadius;
 
@@ -202,10 +202,10 @@ export class Rocket {
         meshToDetach.position.copy(worldPos);
 
         if (stageIndex == 0) {
-            this.exhaust.position.y = stagesData[0].rocketRadius * 2 + stagesData[1].rocketRadius * 2;
+            this.exhaust.position.y = stagesData[0]!.rocketRadius * 2 + stagesData[1]!.rocketRadius * 2;
         } else if (stageIndex == 1) {
-            this.exhaust.position.y = stagesData[0].rocketRadius * 2 + stagesData[1].rocketRadius * 4 + 
-                stagesData[2].rocketRadius * 2;
+            this.exhaust.position.y = stagesData[0]!.rocketRadius * 2 + stagesData[1]!.rocketRadius * 4 + 
+                stagesData[2]!.rocketRadius * 2;
         }
         return meshToDetach;
     }

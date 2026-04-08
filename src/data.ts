@@ -72,7 +72,7 @@ export class SimulationData {
         this.calculateRocketMass();
 
         this.escapeVelocity = (2 * G * this.planetMass / this.planetRadius) ** (1 / 2);
-        this.crossSectionalArea = this.stages[0].crossSectionalArea;
+        this.crossSectionalArea = this.stages[0]!.crossSectionalArea;
         this.velocity = 0;
         this.time = 0;
         this.finished = false;
@@ -82,7 +82,7 @@ export class SimulationData {
     calculateRocketMass() {
         this.totalMass = 0;
         for (let i = this.currentStageIndex; i < this.stages.length; i++) {
-            this.totalMass += this.stages[i].rocketMass + this.stages[i].fuelMass;
+            this.totalMass += this.stages[i]!.rocketMass + this.stages[i]!.fuelMass;
         }
     }
     updatePhysics(deltaTime: number) {
@@ -104,19 +104,19 @@ export class SimulationData {
             }
             gravity = G * this.planetMass / ((this.planetRadius + this.currentHeight) ** 2);
             
-            if (currentStage.fuelMass > 0) {
-                force = currentStage.thrustForce - gravity * this.totalMass - 0.5 *
-                currentAirDensity * currentStage.crossSectionalArea * (this.velocity ** 2) * Math.sign(this.velocity);
+            if (currentStage!.fuelMass > 0) {
+                force = currentStage!.thrustForce - gravity * this.totalMass - 0.5 *
+                currentAirDensity * currentStage!.crossSectionalArea * (this.velocity ** 2) * Math.sign(this.velocity);
             } else {
                 force = -gravity * this.totalMass - 0.5 *
-                currentAirDensity * currentStage.crossSectionalArea * (this.velocity ** 2) * Math.sign(this.velocity);
+                currentAirDensity * currentStage!.crossSectionalArea * (this.velocity ** 2) * Math.sign(this.velocity);
             }
             //console.log(force);
             
             acceleration = force / this.totalMass;
             this.velocity += deltaTime * acceleration;
             this.currentHeight = Math.max(this.currentHeight + this.velocity * deltaTime, 0);
-            currentStage.fuelMass = Math.max(currentStage.fuelMass - currentStage.fuelConsumptionRate * deltaTime, 0);
+            currentStage!.fuelMass = Math.max(currentStage!.fuelMass - currentStage!.fuelConsumptionRate * deltaTime, 0);
             //this.totalMass = Math.max(this.rocketMass + this.fuelMass, this.rocketMass);
             this.time += deltaTime;
 
@@ -130,7 +130,7 @@ export class SimulationData {
     }
     updateDroppedStagesPhysics(deltaTime: number, stage: any, stageIndex: number) {
         let currentHeight = stage.mesh.position.y;
-        if (currentHeight > this.stages[stageIndex].rocketRadius * 6) {
+        if (currentHeight > this.stages[stageIndex]!.rocketRadius * 6) {
             let currentAirDensity, gravity, force, acceleration;
             if (this.currentHeight < this.atmosphereThickness) {
                 currentAirDensity = this.airDensity * Math.E ** (-currentHeight / this.scaleHeight);
@@ -138,9 +138,9 @@ export class SimulationData {
                 currentAirDensity = 0;
             }
             gravity = G * this.planetMass / ((this.planetRadius + currentHeight) ** 2);
-            force = -gravity * this.stages[stageIndex].rocketMass - /*0.5 **/
-                currentAirDensity * this.stages[stageIndex].crossSectionalArea * (stage.velocity ** 2) * Math.sign(stage.velocity);
-                     acceleration = force / this.stages[stageIndex].rocketMass;
+            force = -gravity * this.stages[stageIndex]!.rocketMass - /*0.5 **/
+                currentAirDensity * this.stages[stageIndex]!.crossSectionalArea * (stage.velocity ** 2) * Math.sign(stage.velocity);
+                     acceleration = force / this.stages[stageIndex]!.rocketMass;
             stage.velocity += deltaTime * acceleration;
             stage.mesh.position.y = Math.max(currentHeight + stage.velocity * deltaTime, 0);
         }

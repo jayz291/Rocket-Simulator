@@ -47,8 +47,8 @@ export class RocketSimulator {
         let alpha = this.simulation.currentHeight / this.simulation.atmosphereThickness;
         this.sceneManager.setBackgroundColor(alpha);
 
-        const hasThrust = this.simulating && currentStage.fuelMass > 0;
-        this.sceneManager.rocket.updateParticles(hasThrust, currentStage.rocketRadius);
+        const hasThrust = this.simulating && currentStage!.fuelMass > 0;
+        this.sceneManager.rocket.updateParticles(hasThrust, currentStage!.rocketRadius);
         for (let i = 0; i < this.detachedStages.length; i++) {
             this.simulation.updateDroppedStagesPhysics(0.016, this.detachedStages[i], i);
         }
@@ -56,7 +56,7 @@ export class RocketSimulator {
     }
     updateRocket(newRadius: number, stageIndex = 0) {
         this.sceneManager.scene.remove(this.sceneManager.rocket.mesh);
-        this.simulation.stages[stageIndex].rocketRadius = newRadius;
+        this.simulation.stages[stageIndex]!.rocketRadius = newRadius;
         this.sceneManager.rocket = new Rocket(this.simulation.stages);
         this.sceneManager.scene.add(this.sceneManager.rocket.mesh);
     }
@@ -77,7 +77,7 @@ export class RocketSimulator {
         this.simulation.velocity = 0;
         this.simulation.time = 0;
         for (let i = 0; i < this.simulation.stages.length; i++) {
-            this.simulation.stages[i].fuelMass = this.simulation.stages[i].originalFuelMass;
+            this.simulation.stages[i]!.fuelMass = this.simulation.stages[i]!.originalFuelMass;
         }
         this.detachedStages.forEach(detachedStage => this.sceneManager.scene.remove(detachedStage.mesh));
         this.detachedStages = [];

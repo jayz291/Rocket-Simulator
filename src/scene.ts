@@ -66,11 +66,11 @@ export class SceneManager {
         this.rocket = new Rocket(simulation.stages);
         this.scene.add(this.rocket.mesh);
         if (multiStageMode.checked) {
-            this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 4 + 0.1 + simulation.currentHeight;
+            this.rocket.mesh.position.y = simulation.stages[0]!.rocketRadius * 4 + 0.1 + simulation.currentHeight;
         } else {
-            this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 6 + 0.1 + simulation.currentHeight;
+            this.rocket.mesh.position.y = simulation.stages[0]!.rocketRadius * 6 + 0.1 + simulation.currentHeight;
         }
-        this.camera.position.y = simulation.stages[0].rocketRadius * 6 + 0.1 + simulation.currentHeight;
+        this.camera.position.y = simulation.stages[0]!.rocketRadius * 6 + 0.1 + simulation.currentHeight;
         this.controls.target.y = this.rocket.mesh.position.y;
     }
     renderUpdate() {
@@ -79,9 +79,9 @@ export class SceneManager {
     }
     updatePosition(simulation: SimulationData, deltaY: number) {
         if (multiStageMode.checked) {
-            this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 4 + 0.1 + simulation.currentHeight;
+            this.rocket.mesh.position.y = simulation.stages[0]!.rocketRadius * 4 + 0.1 + simulation.currentHeight;
         } else {
-            this.rocket.mesh.position.y = simulation.stages[0].rocketRadius * 6 + 0.1 + simulation.currentHeight;
+            this.rocket.mesh.position.y = simulation.stages[0]!.rocketRadius * 6 + 0.1 + simulation.currentHeight;
         }
         
         this.rocket.mesh.updateMatrixWorld(true);
