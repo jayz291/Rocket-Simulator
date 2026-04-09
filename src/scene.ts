@@ -29,7 +29,7 @@ export class SceneManager {
         this.scene.add(directionalLight);
 
         this.ground = new Ground(0x00ff00 as any);
-        this.launchPad = new LaunchPad();
+        this.launchPad = new LaunchPad(60);
         this.rocket = new Rocket(simulation.stages);
         this.scene.add(this.ground.mesh);
         this.scene.add(this.rocket.mesh);
@@ -92,27 +92,29 @@ export class SceneManager {
 }
 
 class Ground {
-    geometry: THREE.PlaneGeometry;
+    //geometry: THREE.PlaneGeometry;
+    geometry: THREE.SphereGeometry;
     material: THREE.MeshLambertMaterial;
     mesh: THREE.Mesh;
     constructor(color: THREE.Color) {
-        this.geometry = new THREE.PlaneGeometry(2800000, 2800000);
+        //this.geometry = new THREE.PlaneGeometry(2800000, 2800000);
+        this.geometry = new THREE.SphereGeometry(6370999, 128, 128);
         this.material = new THREE.MeshLambertMaterial({ color: color});
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.mesh.rotation.x = -Math.PI / 2;
-        this.mesh.position.set(0, 0, 0);
+        this.mesh.position.set(0, -6371000, 0);
     }
 }
 
 class LaunchPad {
-    geometry: THREE.PlaneGeometry;
+    geometry: THREE.CylinderGeometry;
     material: THREE.MeshLambertMaterial;
     mesh: THREE.Mesh;
-    constructor() {
-        this.geometry = new THREE.PlaneGeometry(10, 10);
+    constructor(radius: number) {
+        this.geometry = new THREE.CylinderGeometry(radius, radius, 12);
         this.material = new THREE.MeshLambertMaterial({color: 0x808080});
         this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.mesh.rotation.x = -Math.PI / 2;
-        this.mesh.position.set(0, 0.1, 0);
+        this.mesh.rotation.x = 0 /*-Math.PI / 2*/;
+        this.mesh.position.set(0, -6, 0);
     }
 }

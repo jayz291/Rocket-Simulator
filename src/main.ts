@@ -2,6 +2,7 @@ import { SimulationData } from "./data.js";
 import { RocketSimulator } from "./simulation.js"
 import { getRocketData, getPlanetData } from "./data.js"
 import type { StageData } from "./types.js"
+import { textureLevel } from "three/tsl";
 
 export const startButton = document.getElementById("startButton") as HTMLButtonElement;
 const resetButton = document.getElementById("resetButton") as HTMLButtonElement;
@@ -13,6 +14,7 @@ const singleStageInput = document.getElementById("singleStageInputs") as HTMLInp
 const multiStageInput = document.getElementById("multiStageInputs") as HTMLInputElement;
 const singleStageMode = document.getElementById("modeSingle") as HTMLInputElement;
 export const multiStageMode = document.getElementById("modeMulti") as HTMLInputElement;
+const optionElements = document.querySelectorAll('#options input, #options button');
 singleStageMode.addEventListener('change', toggleInterface);
 multiStageMode.addEventListener('change', toggleInterface);
 
@@ -137,4 +139,20 @@ function getStageData(stageNumber: number): StageData {
         originalFuelMass: fuelMass,
         crossSectionalArea: Math.PI * (radius ** 2)
     };
+}
+
+export function disableAllButtons() {
+    optionElements.forEach(element => {
+        if (element.id !== 'resetButton') {
+            (element as HTMLInputElement | HTMLButtonElement).disabled = true;
+        }
+    })
+}
+
+export function enableAllButtons() {
+    optionElements.forEach(element => {
+        if (element.id !== 'resetButton') {
+            (element as HTMLInputElement | HTMLButtonElement).disabled = false;
+        }
+    })
 }

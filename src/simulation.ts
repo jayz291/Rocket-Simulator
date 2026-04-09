@@ -2,6 +2,7 @@
 import { Rocket } from "./rocket.js";
 import { SceneManager } from "./scene.js";
 import { startButton } from "./main.js";
+import { disableAllButtons, enableAllButtons } from "./main.js";
 import { SimulationData } from "./data.js";
 
 const altitudeStat = document.getElementById('altitude') as HTMLSpanElement;
@@ -39,7 +40,10 @@ export class RocketSimulator {
             this.simulating = false;
         }
         if (this.simulating || this.simulation.currentHeight != 0) {
-            startButton.disabled = true;
+            //startButton.disabled = true;
+            disableAllButtons();
+        } else {
+            enableAllButtons();
         }
         altitudeStat.textContent = this.simulation.currentHeight.toFixed(5);
         velocityStat.textContent = this.simulation.velocity.toFixed(5);
@@ -76,6 +80,7 @@ export class RocketSimulator {
         this.simulation.currentHeight = 0;
         this.simulation.velocity = 0;
         this.simulation.time = 0;
+        this.sceneManager.controls.maxPolarAngle = Math.PI / 2;
         for (let i = 0; i < this.simulation.stages.length; i++) {
             this.simulation.stages[i]!.fuelMass = this.simulation.stages[i]!.originalFuelMass;
         }
