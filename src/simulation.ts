@@ -75,17 +75,17 @@ export class RocketSimulator {
             mesh: detachedStage,
             velocity: this.simulation.velocity.clone(),
             velocityMagnitude: this.simulation.velocityMagnitude,
-            acceleration: this.simulation.acceleration.clone(),
-            directionVector: this.simulation.directionVector.clone(),
+            //acceleration: this.simulation.acceleration.clone(),
+            //directionVector: this.simulation.directionVector.clone(),
             position: this.simulation.position.clone(),
-            gravityMagnitude: this.simulation.gravityMagnitude,
-            gravityForce: this.simulation.gravityForce.clone(),
+            //gravityMagnitude: this.simulation.gravityMagnitude,
+            //gravityForce: this.simulation.gravityForce.clone(),
                 //totalMass!: number;
-            airResistanceMagnitude: this.simulation.airResistanceMagnitude,
-            airResistanceForce: this.simulation.airResistanceForce.clone(),
-            totalForce: this.simulation.totalForce.clone(),
+            //airResistanceMagnitude: this.simulation.airResistanceMagnitude,
+            //airResistanceForce: this.simulation.airResistanceForce.clone(),
+            //totalForce: this.simulation.totalForce.clone(),
             currentHeight: this.simulation.currentHeight,
-            currentAirDensity: this.simulation.currentAirDensity
+            //currentAirDensity: this.simulation.currentAirDensity
         });
     }
     resetSimulation() {

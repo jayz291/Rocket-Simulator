@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { StageData, PlanetData } from "./types.js";
+import type { StageData, PlanetData, SimulationState } from "./types.js";
 const G = 6.6743e-11;
 
 const getInputValue = (id: string): number => {
@@ -47,20 +47,21 @@ export class SimulationData {
     /* ---Changing values---- */
     velocity: THREE.Vector3;
     velocityMagnitude!: number;
-    acceleration!: THREE.Vector3;
-    directionVector!: THREE.Vector3;
+    //acceleration!: THREE.Vector3;
+    //directionVector!: THREE.Vector3;
     position!: THREE.Vector3;
-    gravityMagnitude!: number;
-    gravityForce!: THREE.Vector3;
+    //gravityMagnitude!: number;
+    //gravityForce!: THREE.Vector3;
     totalMass!: number;
-    airResistanceMagnitude!: number;
-    airResistanceForce!: THREE.Vector3;
-    thrustForce!: THREE.Vector3;
-    totalForce!: THREE.Vector3;
+    //airResistanceMagnitude!: number;
+    //airResistanceForce!: THREE.Vector3;
+    //thrustForce!: THREE.Vector3;
+    //totalForce!: THREE.Vector3;
     currentHeight: number;
     finished: boolean;
     time: number;
-    currentAirDensity!: number;
+    //currentAirDensity!: number;
+    //liveData!: SimulationState;
     constructor() {
         const planetData = getPlanetData();
         this.currentHeight = 0;
@@ -107,44 +108,35 @@ export class SimulationData {
     }
     updatePhysics(deltaTime: number) {
         if (!this.finished) {
+            let directionVector: THREE.Vector3;
+            let thrustForce: THREE.Vector3;
+
             const rocketPos = this.position.clone();
-            this.directionVector = new THREE.Vector3().subVectors(rocketPos, this.planetCentre);
-            const rHat = this.directionVector.normalize();
-            //let velocityMagnitude;
+            directionVector = new THREE.Vector3().subVectors(rocketPos, this.planetCentre);
             let currentStage = this.stages[this.currentStageIndex];
+            
+            thrustForce = new THREE.Vector3(0, 0, 0);
+            if (currentStage!.fuelMass > 0) {
+                thrustForce = directionVector.clone().normalize().multiplyScalar(currentStage!.thrustForce);
+            }
 
             if (currentStage && currentStage.fuelMass <= 0 && this.currentStageIndex < this.stages.length - 1) {
                 this.currentStageIndex++;
                 currentStage = this.stages[this.currentStageIndex];
-                
             }
             this.calculateRocketMass();
             this.calculateCurrentHeight();
             
+            this.incrementPhysics({
+                velocity: this.velocity,
+                velocityMagnitude: this.velocity.length(),
+                position: this.position,
+                totalMass: this.totalMass,
+                currentHeight: this.currentHeight,
+                thrustForce: thrustForce,
+                crossSectionalArea: currentStage!.crossSectionalArea,
+            }, deltaTime);
 
-            if (this.currentHeight < this.atmosphereThickness) {
-                this.currentAirDensity = this.airDensity * Math.E ** (-this.currentHeight / this.scaleHeight);
-            } else {
-                this.currentAirDensity = 0;
-            }
-            this.gravityMagnitude = G * this.planetMass / ((this.planetRadius + this.currentHeight) ** 2);
-            this.gravityForce = rHat.clone().multiplyScalar(-this.gravityMagnitude * this.totalMass);
-            this.velocityMagnitude = this.velocity.length();
-            const vHat = this.velocity.clone().normalize();
-            
-            this.airResistanceMagnitude = 0.5 * this.currentAirDensity * currentStage!.crossSectionalArea * 
-                (this.velocityMagnitude ** 2);
-            this.airResistanceForce = vHat.clone().multiplyScalar(-this.airResistanceMagnitude);
-            this.thrustForce = this.directionVector.clone().multiplyScalar(currentStage!.thrustForce);
-            if (currentStage!.fuelMass > 0) {
-                this.totalForce = new THREE.Vector3().add(this.airResistanceForce).add(this.thrustForce).add(this.gravityForce);
-            } else {
-                this.totalForce = new THREE.Vector3().add(this.airResistanceForce).add(this.gravityForce);
-            }
-            
-            this.acceleration = this.totalForce.divideScalar(this.totalMass);
-            this.velocity.add(this.acceleration.clone().multiplyScalar(deltaTime));
-            this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
             currentStage!.fuelMass = Math.max(currentStage!.fuelMass - currentStage!.fuelConsumptionRate * deltaTime, 0);
             this.time += deltaTime;
 
@@ -159,30 +151,58 @@ export class SimulationData {
     calculateCurrentHeight() {
         this.currentHeight = Math.max(this.position.distanceTo(this.planetCentre) - this.planetRadius, 0);
     }
+    incrementPhysics(currentData: SimulationState, deltaTime: number) {
+        let directionVector: THREE.Vector3;
+        let gravityForce: THREE.Vector3;
+        let gravityMagnitude: number;
+        let currentAirDensity: number;
+        let airResistanceForce: THREE.Vector3;
+        let airResistanceMagnitude: number;
+        let totalForce: THREE.Vector3;
+        let acceleration: THREE.Vector3;
+
+        const rocketPos = currentData.position.clone();
+        directionVector = new THREE.Vector3().subVectors(rocketPos, this.planetCentre);
+        const rHat = directionVector.normalize();
+
+        currentAirDensity = 0;
+        if (currentData.currentHeight < this.atmosphereThickness) {
+            currentAirDensity = this.airDensity * Math.E ** (-currentData.currentHeight / this.scaleHeight);
+        } 
+
+        gravityMagnitude = G * this.planetMass / ((this.planetRadius + currentData.currentHeight) ** 2);
+        gravityForce = rHat.clone().multiplyScalar(-gravityMagnitude * currentData.totalMass);
+        currentData.velocityMagnitude = currentData.velocity.length();
+        const vHat = currentData.velocity.clone().normalize();
+            
+        airResistanceMagnitude = 0.5 * currentAirDensity * currentData.crossSectionalArea * 
+            (currentData.velocityMagnitude ** 2);
+        airResistanceForce = vHat.clone().multiplyScalar(-airResistanceMagnitude);
+
+        if (currentData.thrustForce) {
+            totalForce = new THREE.Vector3().add(airResistanceForce).add(currentData.thrustForce).add(gravityForce);
+        } else {
+            totalForce = new THREE.Vector3().add(airResistanceForce).add(gravityForce);
+        }
+            
+        acceleration = totalForce.divideScalar(currentData.totalMass);
+        currentData.velocity.add(acceleration.clone().multiplyScalar(deltaTime));
+        currentData.position.add(currentData.velocity.clone().multiplyScalar(deltaTime));
+    }
     updateDroppedStagesPhysics(deltaTime: number, stage: any, stageIndex: number) {
         stage.mesh.getWorldPosition(stage.position);
         stage.currentHeight = Math.max(stage.position.distanceTo(this.planetCentre) - this.planetRadius, 0);
-        stage.directionVector = new THREE.Vector3().subVectors(stage.position, this.planetCentre);
-        const rHat = stage.directionVector.normalize();
-        stage.gravityMagnitude = G * this.planetMass / ((this.planetRadius + stage.currentHeight) ** 2);
-        stage.gravityForce = rHat.clone().multiplyScalar(-stage.gravityMagnitude * this.stages[stageIndex]!.rocketMass);
-        stage.velocityMagnitude = stage.velocity.length();
-        const vHat = stage.velocity.clone().normalize();
         
         if (stage.currentHeight > this.stages[stageIndex]!.rocketRadius * 6) {
             //console.log(stage.velocity);
-            if (this.currentHeight < this.atmosphereThickness) {
-                stage.currentAirDensity = this.airDensity * Math.E ** (-stage.currentHeight / this.scaleHeight);
-            } else {
-                stage.currentAirDensity = 0;
-            }
-            stage.airResistanceMagnitude = 0.5 * stage.currentAirDensity * this.stages[stageIndex]!.crossSectionalArea * 
-                (stage.velocityMagnitude ** 2);        
-            stage.airResistanceForce = vHat.clone().multiplyScalar(-stage.airResistanceMagnitude);
-            stage.totalForce = new THREE.Vector3().add(stage.airResistanceForce).add(stage.gravityForce);
-            stage.acceleration = stage.totalForce.divideScalar(this.stages[stageIndex]!.rocketMass);
-            stage.velocity.add(stage.acceleration.clone().multiplyScalar(deltaTime));
-            stage.mesh.position.add(stage.velocity.clone().multiplyScalar(deltaTime));
+            this.incrementPhysics({
+                velocity: stage.velocity,
+                velocityMagnitude: stage.velocity.length(),
+                position: stage.mesh.position,
+                totalMass: this.stages[stageIndex]!.rocketMass,
+                currentHeight: stage.currentHeight,
+                crossSectionalArea: this.stages[stageIndex]!.crossSectionalArea,
+            }, deltaTime)
         }
     }
 }
