@@ -4,6 +4,7 @@ import { SceneManager } from "./scene.js";
 import { startButton } from "./main.js";
 import { disableAllButtons, enableAllButtons } from "./main.js";
 import { SimulationData } from "./data.js";
+import * as THREE from 'three';
 
 const altitudeStat = document.getElementById('altitude') as HTMLSpanElement;
 const velocityStat = document.getElementById('velocity') as HTMLSpanElement;
@@ -40,13 +41,12 @@ export class RocketSimulator {
             this.simulating = false;
         }
         if (this.simulating || this.simulation.currentHeight != 0) {
-            //startButton.disabled = true;
             disableAllButtons();
         } else {
             enableAllButtons();
         }
         altitudeStat.textContent = this.simulation.currentHeight.toFixed(5);
-        velocityStat.textContent = this.simulation.velocity.toFixed(5);
+        velocityStat.textContent = this.simulation.velocity.length().toFixed(5);
         timeStat.textContent = this.simulation.time.toFixed(2);
         let alpha = this.simulation.currentHeight / this.simulation.atmosphereThickness;
         this.sceneManager.setBackgroundColor(alpha);
@@ -73,12 +73,25 @@ export class RocketSimulator {
     
         this.detachedStages.push({
             mesh: detachedStage,
-            velocity: this.simulation.velocity
+            velocity: this.simulation.velocity.clone(),
+            velocityMagnitude: this.simulation.velocityMagnitude,
+            acceleration: this.simulation.acceleration.clone(),
+            directionVector: this.simulation.directionVector.clone(),
+            position: this.simulation.position.clone(),
+            gravityMagnitude: this.simulation.gravityMagnitude,
+            gravityForce: this.simulation.gravityForce.clone(),
+                //totalMass!: number;
+            airResistanceMagnitude: this.simulation.airResistanceMagnitude,
+            airResistanceForce: this.simulation.airResistanceForce.clone(),
+            totalForce: this.simulation.totalForce.clone(),
+            currentHeight: this.simulation.currentHeight,
+            currentAirDensity: this.simulation.currentAirDensity
         });
     }
     resetSimulation() {
         this.simulation.currentHeight = 0;
-        this.simulation.velocity = 0;
+        //this.simulation.velocity = 0;
+        this.simulation.velocity = new THREE.Vector3(0, 0, 0);
         this.simulation.time = 0;
         this.sceneManager.controls.maxPolarAngle = Math.PI / 2;
         for (let i = 0; i < this.simulation.stages.length; i++) {

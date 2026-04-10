@@ -31,6 +31,7 @@ export class SceneManager {
         this.ground = new Ground(0x00ff00 as any);
         this.launchPad = new LaunchPad(60);
         this.rocket = new Rocket(simulation.stages);
+        this.rocket.mesh.getWorldPosition(simulation.position);
         this.scene.add(this.ground.mesh);
         this.scene.add(this.rocket.mesh);
         this.scene.add(this.launchPad.mesh);
