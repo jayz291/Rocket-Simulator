@@ -16,22 +16,25 @@ export class SceneManager {
     controls!: OrbitControls;
     renderer!: THREE.WebGLRenderer;
     rocket: Rocket;
+    defaultUp: THREE.Vector3;
     constructor(simulation: SimulationData) {
         this.scene = new THREE.Scene();
         this.startColour = new THREE.Color(0x90d5ff);
         this.endColour = new THREE.Color(0x000000);
         this.scene.background = this.startColour;
-        this.scene.fog = new THREE.Fog(this.startColour, 10000, 1400000);
+        this.scene.fog = new THREE.Fog(this.startColour, 10000000, 20000000);
         this.scene.add(this.camera);
+        this.defaultUp = new THREE.Vector3(0, 1, 0);
 
         const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
         directionalLight.position.set(20000, 20000, 300);
         this.scene.add(directionalLight);
 
-        this.ground = new Ground(0x00ff00 as any);
+        this.ground = new Ground(0x00ff00 as any, simulation.planetRadius);
         this.launchPad = new LaunchPad(60);
         this.rocket = new Rocket(simulation.stages);
         this.rocket.mesh.getWorldPosition(simulation.position);
+        simulation.originalPosition = simulation.position.clone();
         this.scene.add(this.ground.mesh);
         this.scene.add(this.rocket.mesh);
         this.scene.add(this.launchPad.mesh);
@@ -66,28 +69,46 @@ export class SceneManager {
         this.scene.remove(this.rocket.mesh);
         this.rocket = new Rocket(simulation.stages);
         this.scene.add(this.rocket.mesh);
+
+       let offset: number;
         if (multiStageMode.checked) {
-            this.rocket.mesh.position.y = simulation.stages[0]!.rocketRadius * 4 + 0.1 + simulation.currentHeight;
+            offset = simulation.stages[0]!.rocketRadius * 4 + 0.1 //+ simulation.currentHeight;
         } else {
-            this.rocket.mesh.position.y = simulation.stages[0]!.rocketRadius * 6 + 0.1 + simulation.currentHeight;
+            offset = simulation.stages[0]!.rocketRadius * 6 + 0.1 //+ simulation.currentHeight;
         }
-        this.camera.position.y = simulation.stages[0]!.rocketRadius * 6 + 0.1 + simulation.currentHeight;
-        this.controls.target.y = this.rocket.mesh.position.y;
+        simulation.position = simulation.originalPosition.clone();
+        const rHat = new THREE.Vector3().subVectors(simulation.position, simulation.planetCentre).normalize();
+        const offsetVector = rHat.clone().multiplyScalar(offset);
+        //console.log(deltaPosition);
+        this.rocket.mesh.position.copy(simulation.position).add(offsetVector);
+        const cameraOffset = new THREE.Vector3(20, 10, 20);
+        this.camera.position.copy(this.rocket.mesh.position).add(cameraOffset);
+        this.controls.target.copy(this.rocket.mesh.position);
+        this.controls.maxPolarAngle = Math.PI;
     }
     renderUpdate() {
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
     }
-    updatePosition(simulation: SimulationData, deltaY: number) {
+    updatePosition(simulation: SimulationData, deltaPosition: THREE.Vector3) {
+        let offset: number;
+        const rHat = new THREE.Vector3().subVectors(simulation.position, simulation.planetCentre).normalize();
         if (multiStageMode.checked) {
-            this.rocket.mesh.position.y = simulation.stages[0]!.rocketRadius * 4 + 0.1 + simulation.currentHeight;
+            offset = simulation.stages[0]!.rocketRadius * 4 + 0.1 //+ simulation.currentHeight;
         } else {
-            this.rocket.mesh.position.y = simulation.stages[0]!.rocketRadius * 6 + 0.1 + simulation.currentHeight;
+            offset = simulation.stages[0]!.rocketRadius * 6 + 0.1 //+ simulation.currentHeight;
         }
-        
+        const offsetVector = rHat.clone().multiplyScalar(offset);
+        //console.log(deltaPosition);
+        this.rocket.mesh.position.copy(simulation.position).add(offsetVector);
+
+        const targetDirection = simulation.thrustDirection.clone().normalize();
+
         this.rocket.mesh.updateMatrixWorld(true);
-        this.camera.position.y += deltaY;
-        this.controls.target.y = this.rocket.mesh.position.y;
+        this.rocket.mesh.quaternion.setFromUnitVectors(this.defaultUp, targetDirection);
+        this.camera.position.add(deltaPosition);
+        this.controls.target.copy(this.rocket.mesh.position);
+        //this.controls.target.y = this.rocket.mesh.position.y;
         this.controls.maxPolarAngle = Math.PI;
     }
 }
@@ -97,13 +118,13 @@ class Ground {
     geometry: THREE.SphereGeometry;
     material: THREE.MeshLambertMaterial;
     mesh: THREE.Mesh;
-    constructor(color: THREE.Color) {
+    constructor(color: THREE.Color, radius: number) {
         //this.geometry = new THREE.PlaneGeometry(2800000, 2800000);
-        this.geometry = new THREE.SphereGeometry(6370999, 128, 128);
+        this.geometry = new THREE.SphereGeometry(radius - 1, 128, 128);
         this.material = new THREE.MeshLambertMaterial({ color: color});
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.mesh.rotation.x = -Math.PI / 2;
-        this.mesh.position.set(0, -6371000, 0);
+        this.mesh.position.set(0, -radius, 0);
     }
 }
 

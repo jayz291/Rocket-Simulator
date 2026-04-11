@@ -44,24 +44,16 @@ export class SimulationData {
     scaleHeight!: number;
     crossSectionalArea!: number;
     stages: StageData[];
+    originalPosition!: THREE.Vector3;
     /* ---Changing values---- */
     velocity: THREE.Vector3;
     velocityMagnitude!: number;
-    //acceleration!: THREE.Vector3;
-    //directionVector!: THREE.Vector3;
     position!: THREE.Vector3;
-    //gravityMagnitude!: number;
-    //gravityForce!: THREE.Vector3;
     totalMass!: number;
-    //airResistanceMagnitude!: number;
-    //airResistanceForce!: THREE.Vector3;
-    //thrustForce!: THREE.Vector3;
-    //totalForce!: THREE.Vector3;
     currentHeight: number;
     finished: boolean;
     time: number;
-    //currentAirDensity!: number;
-    //liveData!: SimulationState;
+    thrustDirection!: THREE.Vector3;
     constructor() {
         const planetData = getPlanetData();
         this.currentHeight = 0;
@@ -113,17 +105,23 @@ export class SimulationData {
 
             const rocketPos = this.position.clone();
             directionVector = new THREE.Vector3().subVectors(rocketPos, this.planetCentre);
+            const rHat = directionVector.clone().normalize();
             let currentStage = this.stages[this.currentStageIndex];
-            
-            thrustForce = new THREE.Vector3(0, 0, 0);
-            if (currentStage!.fuelMass > 0) {
-                thrustForce = directionVector.clone().normalize().multiplyScalar(currentStage!.thrustForce);
-            }
+
+            const globalZ = new THREE.Vector3(0, 0, 1);
+        
+            let pitchAngle = this.calculatePitchAngle();
 
             if (currentStage && currentStage.fuelMass <= 0 && this.currentStageIndex < this.stages.length - 1) {
                 this.currentStageIndex++;
                 currentStage = this.stages[this.currentStageIndex];
             }
+            this.thrustDirection = rHat.clone().applyAxisAngle(globalZ, -pitchAngle);
+            thrustForce = new THREE.Vector3(0, 0, 0);
+            if (currentStage!.fuelMass > 0) {
+                thrustForce = this.thrustDirection.clone().normalize().multiplyScalar(currentStage!.thrustForce);
+            }
+
             this.calculateRocketMass();
             this.calculateCurrentHeight();
             
@@ -139,17 +137,30 @@ export class SimulationData {
 
             currentStage!.fuelMass = Math.max(currentStage!.fuelMass - currentStage!.fuelConsumptionRate * deltaTime, 0);
             this.time += deltaTime;
-
+            
             if (this.velocity.length() > this.escapeVelocity && this.currentHeight > 100000000) {
                 this.finished = true;
             }
-            if (this.time > 2 && this.currentHeight == 0) {
+            if (this.time > 10 && this.currentHeight == 0) {
                 this.finished = true;
             }
         }
     }
     calculateCurrentHeight() {
         this.currentHeight = Math.max(this.position.distanceTo(this.planetCentre) - this.planetRadius, 0);
+    }
+    calculatePitchAngle(): number {
+        let pitchAngle = 0;
+        const turnStartHeight = 5000; 
+        const turnEndHeight = 160000;
+
+        if (this.currentHeight > turnStartHeight) {
+            let turnProgress = (this.currentHeight - turnStartHeight) / (turnEndHeight - turnStartHeight);
+            turnProgress = Math.min(turnProgress, 1);
+            const aggressiveTurn = Math.pow(turnProgress, 2.5);
+            pitchAngle = aggressiveTurn * (Math.PI * 0.42);
+        }
+        return pitchAngle;
     }
     incrementPhysics(currentData: SimulationState, deltaTime: number) {
         let directionVector: THREE.Vector3;
@@ -176,7 +187,7 @@ export class SimulationData {
         const vHat = currentData.velocity.clone().normalize();
             
         airResistanceMagnitude = 0.5 * currentAirDensity * currentData.crossSectionalArea * 
-            (currentData.velocityMagnitude ** 2);
+            (currentData.velocityMagnitude ** 2) * 0.25;
         airResistanceForce = vHat.clone().multiplyScalar(-airResistanceMagnitude);
 
         if (currentData.thrustForce) {

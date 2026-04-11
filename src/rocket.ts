@@ -190,16 +190,24 @@ export class Rocket {
         //let stages = this.simulation.stages;
         const meshToDetach = this.stageMeshes[stageIndex];
         const worldPos = new THREE.Vector3();
+        const worldQuat = new THREE.Quaternion();
         meshToDetach.getWorldPosition(worldPos);
+        meshToDetach.getWorldQuaternion(worldQuat);
+
+        const localDown = new THREE.Vector3(0, -1, 0);
+        const worldDown = localDown.applyQuaternion(this.mesh.quaternion).normalize();
+        let dropDown = 0;
         if (stageIndex == 0) {
-            worldPos.y -= 2 * stagesData[0]!.rocketRadius;
+            dropDown = 2 * stagesData[0]!.rocketRadius;
         } else if (stageIndex == 1) {
-            worldPos.y -= (2 * stagesData[1]!.rocketRadius + 2 * stagesData[0]!.rocketRadius);
+            dropDown = (2 * stagesData[1]!.rocketRadius + 2 * stagesData[0]!.rocketRadius);
         }
-        //worldPos.y -= 3 * stagesData[stageIndex].rocketRadius;
+        
+        worldPos.add(worldDown.multiplyScalar(dropDown));
 
         this.mesh.remove(meshToDetach);
         meshToDetach.position.copy(worldPos);
+        meshToDetach.quaternion.copy(worldQuat);
 
         if (stageIndex == 0) {
             this.exhaust.position.y = stagesData[0]!.rocketRadius * 2 + stagesData[1]!.rocketRadius * 2;

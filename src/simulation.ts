@@ -29,10 +29,10 @@ export class RocketSimulator {
         requestAnimationFrame(this.animate);
         let currentStage = this.simulation.stages[this.simulation.currentStageIndex];
         if (this.simulating && this.simulation && !this.simulation.finished) {
-            let previousHeight = this.simulation.currentHeight;
+            let previousPosition = this.simulation.position.clone();
             this.simulation.updatePhysics(0.016);
-            let deltaY = this.simulation.currentHeight - previousHeight;
-            this.sceneManager.updatePosition(this.simulation, deltaY);
+            let deltaPosition = this.simulation.position.clone().sub(previousPosition);
+            this.sceneManager.updatePosition(this.simulation, deltaPosition);
             if (this.simulation.currentStageIndex > this.previousStageIndex) {
                 this.detachStage(this.previousStageIndex);
                 this.previousStageIndex = this.simulation.currentStageIndex;
@@ -75,17 +75,8 @@ export class RocketSimulator {
             mesh: detachedStage,
             velocity: this.simulation.velocity.clone(),
             velocityMagnitude: this.simulation.velocityMagnitude,
-            //acceleration: this.simulation.acceleration.clone(),
-            //directionVector: this.simulation.directionVector.clone(),
             position: this.simulation.position.clone(),
-            //gravityMagnitude: this.simulation.gravityMagnitude,
-            //gravityForce: this.simulation.gravityForce.clone(),
-                //totalMass!: number;
-            //airResistanceMagnitude: this.simulation.airResistanceMagnitude,
-            //airResistanceForce: this.simulation.airResistanceForce.clone(),
-            //totalForce: this.simulation.totalForce.clone(),
             currentHeight: this.simulation.currentHeight,
-            //currentAirDensity: this.simulation.currentAirDensity
         });
     }
     resetSimulation() {
